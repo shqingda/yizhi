@@ -205,6 +205,10 @@ export function EditorPage() {
 							<Share data-icon="inline-start" />
 							{exporting ? "导出中" : layoutMode === "single" ? "导出长图" : "导出 A4"}
 						</Button>
+						<Button size="sm" variant="outline" render={<Link to={`/r/${slug}`} />}>
+							<ExternalLink data-icon="inline-start" />
+							网页预览
+						</Button>
 						<DropdownMenu>
 							<DropdownMenuTrigger
 								render={
@@ -220,9 +224,6 @@ export function EditorPage() {
 								</DropdownMenuLabel>
 								<DropdownMenuSeparator />
 								<DropdownMenuGroup>
-								<DropdownMenuItem render={<Link to={`/r/${slug}`} />}>
-									<ExternalLink /> 打开公开页
-								</DropdownMenuItem>
 								<DropdownMenuItem
 									onClick={() => {
 										void persistCloud().then((ok) => {
