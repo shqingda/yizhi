@@ -61,7 +61,7 @@ export function HighlightsEditor({
 	return (
 		<Field label="要点（每行一条）">
 			<textarea
-				className="flex min-h-[92px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+				className="flex min-h-23 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 				value={value.join("\n")}
 				onChange={(event) => onChange(event.target.value.split("\n"))}
 				placeholder="一条成绩或职责&#10;另一条要点"
