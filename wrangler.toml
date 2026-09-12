@@ -1,0 +1,24 @@
+# Resume Studio — Cloudflare Workers + static SPA + D1
+# Local: `pnpm dev` (Vite + @cloudflare/vite-plugin emulates D1)
+# Deploy: create a D1 database, replace database_id, then `pnpm deploy`
+
+name = "resume-studio"
+main = "./src/worker/index.ts"
+compatibility_date = "2026-09-12"
+compatibility_flags = ["nodejs_compat"]
+upload_source_maps = true
+
+[observability]
+enabled = true
+
+[assets]
+directory = "./dist/client"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "resume-studio"
+# Placeholder for local/dev. Replace with the id from `wrangler d1 create resume-studio` before production deploy.
+database_id = "00000000-0000-0000-0000-000000000001"
+migrations_dir = "drizzle"
