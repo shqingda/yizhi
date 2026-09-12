@@ -137,7 +137,7 @@ function renderSection(key: SectionKey, resume: Resume, accent: string) {
 						<div key={item.id} className="resume-entry">
 							<EntryHeader
 								left={item.institution}
-								middle={[item.studyType, item.area].filter(Boolean).join(" · ")}
+								middle={[item.studyType, item.area, item.location].filter(Boolean).join(" · ")}
 								right={dateRange(item.startDate, item.endDate)}
 							/>
 							<Bullets items={item.highlights} />
