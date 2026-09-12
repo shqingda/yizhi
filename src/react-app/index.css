@@ -186,19 +186,22 @@ body {
 }
 
 .resume-entry-head {
-	display: grid;
-	grid-template-columns: 1fr auto 1fr;
+	display: flex;
 	align-items: baseline;
-	gap: 2mm;
+	justify-content: space-between;
+	gap: 3mm;
 	font-size: 0.98em;
 }
 
 .resume-entry-left {
+	flex: 1 1 auto;
+	min-width: 0;
 	font-weight: 700;
 	color: #111;
 }
 
 .resume-entry-mid {
+	flex: 0 1 auto;
 	text-align: center;
 	font-weight: 500;
 	color: #1f2937;
@@ -206,6 +209,7 @@ body {
 }
 
 .resume-entry-right {
+	flex: 0 0 auto;
 	text-align: right;
 	color: #4b5563;
 	font-variant-numeric: tabular-nums;
