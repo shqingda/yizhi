@@ -1,6 +1,10 @@
 {
 	"name": "resume-studio",
 	"description": "Universal online resume generator — Magic Resume–style editor, public page, and A4 PDF on Cloudflare Workers + D1",
+	"repository": {
+		"type": "git",
+		"url": "https://origin.cursor.com/shqingda/resume-studio.git"
+	},
 	"private": true,
 	"type": "module",
 	"scripts": {
