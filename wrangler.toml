@@ -4,7 +4,8 @@
 
 name = "resume-studio"
 main = "./src/worker/index.ts"
-compatibility_date = "2026-09-12"
+# Must be <= the local workerd binary. Bump when you upgrade wrangler/workerd.
+compatibility_date = "2026-08-18"
 compatibility_flags = ["nodejs_compat"]
 upload_source_maps = true
 

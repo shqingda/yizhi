@@ -12,24 +12,23 @@ const app = new Hono<AppEnv>();
 
 app.use("/api/*", cors());
 
-const INIT_SQL = `
-CREATE TABLE IF NOT EXISTS resumes (
-  id TEXT PRIMARY KEY NOT NULL,
-  slug TEXT NOT NULL,
-  data TEXT NOT NULL,
-  updated_at TEXT NOT NULL
-);
-CREATE UNIQUE INDEX IF NOT EXISTS resumes_slug_unique ON resumes (slug);
-`;
-
 function hasDb(env: Env): env is Env & { DB: D1Database } {
 	return Boolean(env.DB);
 }
 
 async function openDb(env: Env): Promise<DrizzleD1Database | null> {
 	if (!hasDb(env)) return null;
-	await env.DB.exec(INIT_SQL);
-	return drizzle(env.DB);
+	try {
+		await env.DB.prepare(
+			"CREATE TABLE IF NOT EXISTS resumes (id TEXT PRIMARY KEY NOT NULL, slug TEXT NOT NULL, data TEXT NOT NULL, updated_at TEXT NOT NULL)",
+		).run();
+		await env.DB.prepare(
+			"CREATE UNIQUE INDEX IF NOT EXISTS resumes_slug_unique ON resumes (slug)",
+		).run();
+		return drizzle(env.DB);
+	} catch {
+		return null;
+	}
 }
 
 function parseResumeJson(raw: string) {
