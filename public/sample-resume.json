@@ -3,8 +3,7 @@
     "name": "商庆达",
     "label": "前端 / 全栈工程师",
     "email": "shqingda@gmail.com",
-    "phone": "13820138117",
-    "status": "求职中"
+    "phone": "13820138117"
   },
   "skills": [
     { "id": "skill_lang", "name": "编程语言", "keywords": "TypeScript / JavaScript、Python、Java" },
@@ -68,6 +67,8 @@
       "id": "proj_cloud",
       "name": "云应用客户端",
       "role": "前端开发",
+      "startDate": "2022/04",
+      "endDate": "2022/06",
       "highlights": [
         "基于 Vue 与 Element Plus 构建云应用桌面客户端。",
         "完成核心页面、组件封装与业务联调。"
@@ -77,18 +78,24 @@
       "id": "proj_music",
       "name": "Vue 在线音乐",
       "role": "独立开发",
+      "startDate": "2020/09",
+      "endDate": "2021/01",
       "highlights": ["使用 Vue、Vuex 与 Firebase 实现在线音乐播放与数据同步。"]
     },
     {
       "id": "proj_blog",
       "name": "Vue 简易博客",
       "role": "独立开发",
+      "startDate": "2020/03",
+      "endDate": "2020/06",
       "highlights": ["基于 Vue 实现文章列表、详情与基础内容管理。"]
     },
     {
       "id": "proj_mooc",
       "name": "MOOC 数据可视化",
       "role": "开发",
+      "startDate": "2018/10",
+      "endDate": "2019/06",
       "highlights": [
         "使用 ECharts 对 MOOC 学习数据进行可视化分析。",
         "支撑流失预警研究中的图表展示。"
@@ -98,6 +105,8 @@
       "id": "proj_bot",
       "name": "Telegram 智能 Bot",
       "role": "独立开发",
+      "startDate": "2018/01",
+      "endDate": "2018/05",
       "highlights": ["使用 Python 开发 Telegram 智能机器人，处理会话与自定义指令。"]
     }
   ],
@@ -152,14 +161,15 @@
   ],
   "customSections": [],
   "meta": {
-    "accentColor": "#2563eb",
+    "accentColor": "#111111",
     "fontScale": 1,
     "showPhoto": false,
+    "layoutMode": "multi",
     "sectionOrder": [
-      "skills",
+      "education",
       "experience",
       "projects",
-      "education",
+      "skills",
       "awards",
       "publications",
       "languages",

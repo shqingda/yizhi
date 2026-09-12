@@ -45,7 +45,7 @@ export function moveItem<T>(list: T[], from: number, to: number): T[] {
 export function Field({ label, children }: { label: string; children: ReactNode }) {
 	return (
 		<label className="grid gap-1.5 text-sm">
-			<span className="font-medium text-stone-700">{label}</span>
+			<span className="font-medium text-neutral-700">{label}</span>
 			{children}
 		</label>
 	);

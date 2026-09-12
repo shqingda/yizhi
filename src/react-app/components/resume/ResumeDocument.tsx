@@ -1,12 +1,6 @@
-import {
-	Briefcase,
-	Calendar,
-	Globe,
-	Mail,
-	MapPin,
-	Phone,
-} from "lucide-react";
+import { useLayoutEffect, useRef } from "react";
 import type { Resume, SectionKey } from "@shared/schema";
+import { useResumeFit, type ResumeLayoutInfo } from "@/hooks/useResumeFit";
 
 const SECTION_TITLES: Record<SectionKey, string> = {
 	skills: "专业技能",
@@ -27,33 +21,31 @@ function dateRange(start?: string, end?: string) {
 	return a || b || "";
 }
 
-function SectionHeading({ title, accent }: { title: string; accent: string }) {
+function SectionHeading({ title }: { title: string }) {
 	return (
 		<div className="resume-heading">
-			<span className="resume-heading-bar" style={{ background: accent }} />
-			<h2 className="resume-heading-title" style={{ color: accent }}>
-				{title}
-			</h2>
-			<span className="resume-heading-line" style={{ background: accent }} />
+			<h2 className="resume-heading-title">{title}</h2>
 		</div>
 	);
 }
 
 function EntryHeader({
-	left,
-	middle,
-	right,
+	title,
+	meta,
+	date,
 }: {
-	left: string;
-	middle?: string;
-	right?: string;
+	title: string;
+	meta?: string;
+	date?: string;
 }) {
-	if (!left && !middle && !right) return null;
+	if (!title && !meta && !date) return null;
 	return (
 		<div className="resume-entry-head">
-			<div className="resume-entry-left">{left}</div>
-			<div className="resume-entry-mid">{middle}</div>
-			<div className="resume-entry-right">{right}</div>
+			<div className="resume-entry-copy">
+				<div className="resume-entry-title">{title}</div>
+				{meta ? <div className="resume-entry-meta">{meta}</div> : null}
+			</div>
+			{date ? <div className="resume-entry-date">{date}</div> : null}
 		</div>
 	);
 }
@@ -70,36 +62,36 @@ function Bullets({ items }: { items?: string[] }) {
 	);
 }
 
-function renderSection(key: SectionKey, resume: Resume, accent: string) {
+function renderSection(key: SectionKey, resume: Resume) {
 	switch (key) {
 		case "skills":
 			if (!resume.skills.some((s) => s.name || s.keywords)) return null;
 			return (
 				<section key={key} className="resume-section">
-					<SectionHeading title={SECTION_TITLES.skills} accent={accent} />
-					<ul className="resume-bullets">
+					<SectionHeading title={SECTION_TITLES.skills} />
+					<dl className="resume-skills">
 						{resume.skills
 							.filter((s) => s.name || s.keywords)
 							.map((skill) => (
-								<li key={skill.id}>
-									{skill.name ? <strong>{skill.name}：</strong> : null}
-									{skill.keywords}
-								</li>
+								<div key={skill.id} className="resume-skill">
+									<dt>{skill.name}</dt>
+									<dd>{skill.keywords}</dd>
+								</div>
 							))}
-					</ul>
+					</dl>
 				</section>
 			);
 		case "experience":
 			if (!resume.experience.some((e) => e.company || e.position)) return null;
 			return (
 				<section key={key} className="resume-section">
-					<SectionHeading title={SECTION_TITLES.experience} accent={accent} />
+					<SectionHeading title={SECTION_TITLES.experience} />
 					{resume.experience.map((item) => (
 						<div key={item.id} className="resume-entry">
 							<EntryHeader
-								left={item.company}
-								middle={item.position}
-								right={dateRange(item.startDate, item.endDate)}
+								title={item.company}
+								meta={[item.position, item.location].filter(Boolean).join(" · ")}
+								date={dateRange(item.startDate, item.endDate)}
 							/>
 							<Bullets items={item.highlights} />
 						</div>
@@ -110,17 +102,17 @@ function renderSection(key: SectionKey, resume: Resume, accent: string) {
 			if (!resume.projects.some((p) => p.name)) return null;
 			return (
 				<section key={key} className="resume-section">
-					<SectionHeading title={SECTION_TITLES.projects} accent={accent} />
+					<SectionHeading title={SECTION_TITLES.projects} />
 					{resume.projects.map((item) => (
 						<div key={item.id} className="resume-entry">
 							<EntryHeader
-								left={item.name}
-								middle={item.role}
-								right={dateRange(item.startDate, item.endDate)}
+								title={item.name}
+								meta={item.role}
+								date={dateRange(item.startDate, item.endDate)}
 							/>
 							<Bullets
 								items={[
-									...(item.url ? [`链接：${item.url}`] : []),
+									...(item.url ? [`${item.url}`] : []),
 									...item.highlights,
 								]}
 							/>
@@ -132,13 +124,13 @@ function renderSection(key: SectionKey, resume: Resume, accent: string) {
 			if (!resume.education.some((e) => e.institution)) return null;
 			return (
 				<section key={key} className="resume-section">
-					<SectionHeading title={SECTION_TITLES.education} accent={accent} />
+					<SectionHeading title={SECTION_TITLES.education} />
 					{resume.education.map((item) => (
 						<div key={item.id} className="resume-entry">
 							<EntryHeader
-								left={item.institution}
-								middle={[item.studyType, item.area, item.location].filter(Boolean).join(" · ")}
-								right={dateRange(item.startDate, item.endDate)}
+								title={item.institution}
+								meta={[item.studyType, item.area, item.location].filter(Boolean).join(" · ")}
+								date={dateRange(item.startDate, item.endDate)}
 							/>
 							<Bullets items={item.highlights} />
 						</div>
@@ -149,53 +141,50 @@ function renderSection(key: SectionKey, resume: Resume, accent: string) {
 			if (!resume.awards.some((a) => a.title)) return null;
 			return (
 				<section key={key} className="resume-section">
-					<SectionHeading title={SECTION_TITLES.awards} accent={accent} />
-					<ul className="resume-bullets">
-						{resume.awards
-							.filter((a) => a.title)
-							.map((award) => (
-								<li key={award.id}>
-									{award.title}
-									{award.awarder ? `，${award.awarder}` : ""}
-									{award.date ? `，${award.date}` : ""}
-									{award.summary ? `。${award.summary}` : ""}
-								</li>
-							))}
-					</ul>
+					<SectionHeading title={SECTION_TITLES.awards} />
+					{resume.awards
+						.filter((a) => a.title)
+						.map((award) => (
+							<div key={award.id} className="resume-entry">
+								<EntryHeader
+									title={award.title}
+									meta={award.awarder}
+									date={award.date}
+								/>
+								{award.summary ? <p className="resume-note">{award.summary}</p> : null}
+							</div>
+						))}
 				</section>
 			);
 		case "publications":
 			if (!resume.publications.some((p) => p.name)) return null;
 			return (
 				<section key={key} className="resume-section">
-					<SectionHeading title={SECTION_TITLES.publications} accent={accent} />
-					<ul className="resume-bullets">
-						{resume.publications
-							.filter((p) => p.name)
-							.map((pub) => (
-								<li key={pub.id}>
-									{pub.summary ? `${pub.summary}. ` : ""}
-									<em>{pub.name}</em>
-									{pub.publisher ? `. ${pub.publisher}` : ""}
-									{pub.releaseDate ? `, ${pub.releaseDate}` : ""}
-									{pub.url ? `. ${pub.url}` : ""}
-								</li>
-							))}
-					</ul>
+					<SectionHeading title={SECTION_TITLES.publications} />
+					{resume.publications
+						.filter((p) => p.name)
+						.map((pub) => (
+							<div key={pub.id} className="resume-entry">
+								<EntryHeader title={pub.name} date={pub.releaseDate} />
+								<p className="resume-note">
+									{[pub.summary, pub.publisher, pub.url].filter(Boolean).join("  ·  ")}
+								</p>
+							</div>
+						))}
 				</section>
 			);
 		case "languages":
 			if (!resume.languages.some((l) => l.language || l.fluency)) return null;
 			return (
 				<section key={key} className="resume-section">
-					<SectionHeading title={SECTION_TITLES.languages} accent={accent} />
-					<ul className="resume-bullets">
+					<SectionHeading title={SECTION_TITLES.languages} />
+					<ul className="resume-languages">
 						{resume.languages
 							.filter((l) => l.language || l.fluency)
 							.map((lang) => (
 								<li key={lang.id}>
-									{lang.language}
-									{lang.fluency ? `：${lang.fluency}` : ""}
+									<span>{lang.language}</span>
+									{lang.fluency ? <span>{lang.fluency}</span> : null}
 								</li>
 							))}
 					</ul>
@@ -206,10 +195,10 @@ function renderSection(key: SectionKey, resume: Resume, accent: string) {
 				.filter((section) => section.title || section.items.length)
 				.map((section) => (
 					<section key={section.id} className="resume-section">
-						<SectionHeading title={section.title || "自定义"} accent={accent} />
+						<SectionHeading title={section.title || "其他"} />
 						{section.items.map((item) => (
 							<div key={item.id} className="resume-entry">
-								<EntryHeader left={item.title} middle={item.subtitle} right={item.date} />
+								<EntryHeader title={item.title} meta={item.subtitle} date={item.date} />
 								<Bullets items={item.highlights} />
 							</div>
 						))}
@@ -220,46 +209,71 @@ function renderSection(key: SectionKey, resume: Resume, accent: string) {
 	}
 }
 
-export function ResumeDocument({ resume }: { resume: Resume }) {
-	const accent = resume.meta.accentColor || "#2563eb";
-	const scale = resume.meta.fontScale || 1;
+export function ResumeDocument({
+	resume,
+	onLayout,
+}: {
+	resume: Resume;
+	onLayout?: (info: ResumeLayoutInfo) => void;
+}) {
+	const sheetRef = useRef<HTMLElement>(null);
+	const innerRef = useRef<HTMLDivElement>(null);
+	const layoutMode = resume.meta.layoutMode === "multi" ? "multi" : "single";
+	const revision = JSON.stringify({
+		basics: resume.basics,
+		skills: resume.skills,
+		experience: resume.experience,
+		projects: resume.projects,
+		education: resume.education,
+		awards: resume.awards,
+		publications: resume.publications,
+		languages: resume.languages,
+		customSections: resume.customSections,
+		fontScale: resume.meta.fontScale,
+		showPhoto: resume.meta.showPhoto,
+		sectionOrder: resume.meta.sectionOrder,
+		layoutMode,
+	});
+	const layout = useResumeFit(sheetRef, innerRef, layoutMode, revision);
+	const pageCount = layout.pageCount;
+
+	useLayoutEffect(() => {
+		onLayout?.(layout);
+	}, [layout, onLayout]);
+
 	const contacts = [
-		resume.basics.status
-			? { icon: Briefcase, text: resume.basics.status }
-			: null,
-		resume.basics.availableFrom
-			? { icon: Calendar, text: resume.basics.availableFrom }
-			: null,
-		resume.basics.email ? { icon: Mail, text: resume.basics.email } : null,
-		resume.basics.phone ? { icon: Phone, text: resume.basics.phone } : null,
-		resume.basics.location ? { icon: MapPin, text: resume.basics.location } : null,
-		resume.basics.url ? { icon: Globe, text: resume.basics.url } : null,
-	].filter(Boolean) as { icon: typeof Mail; text: string }[];
+		resume.basics.email,
+		resume.basics.phone,
+		resume.basics.location,
+		resume.basics.url,
+	].filter((item): item is string => Boolean(item?.trim()));
+
+	const scale = resume.meta.fontScale || 1;
 
 	return (
 		<article
-			className="resume-sheet"
-			style={{ ["--resume-accent" as string]: accent, fontSize: `${scale * 10.5}pt` }}
+			ref={sheetRef}
+			className="resume-sheet resume-print-root"
+			data-layout={layoutMode}
+			data-pages={pageCount}
+			style={{ ["--resume-font-scale" as string]: String(scale) }}
 		>
-			<header className="resume-header">
-				{resume.meta.showPhoto && resume.basics.photo ? (
-					<img className="resume-photo" src={resume.basics.photo} alt={resume.basics.name} />
-				) : null}
-				<h1 className="resume-name">{resume.basics.name || "姓名"}</h1>
-				{resume.basics.label ? <p className="resume-title">{resume.basics.label}</p> : null}
-				{contacts.length ? (
-					<ul className="resume-contacts">
-						{contacts.map((item) => (
-							<li key={item.text}>
-								<item.icon className="resume-contact-icon" strokeWidth={1.75} />
-								<span>{item.text}</span>
-							</li>
-						))}
-					</ul>
-				) : null}
-				{resume.basics.summary ? <p className="resume-summary">{resume.basics.summary}</p> : null}
-			</header>
-			{resume.meta.sectionOrder.map((key) => renderSection(key, resume, accent))}
+			<div ref={innerRef} className="resume-inner">
+				<header className="resume-header">
+					{resume.meta.showPhoto && resume.basics.photo ? (
+						<img className="resume-photo" src={resume.basics.photo} alt={resume.basics.name} />
+					) : null}
+					<div className="resume-identity">
+						<h1 className="resume-name">{resume.basics.name || "姓名"}</h1>
+						{resume.basics.label ? <p className="resume-title">{resume.basics.label}</p> : null}
+					</div>
+					{contacts.length ? (
+						<p className="resume-contacts">{contacts.join("  ·  ")}</p>
+					) : null}
+					{resume.basics.summary ? <p className="resume-summary">{resume.basics.summary}</p> : null}
+				</header>
+				{resume.meta.sectionOrder.map((key) => renderSection(key, resume))}
+			</div>
 		</article>
 	);
 }

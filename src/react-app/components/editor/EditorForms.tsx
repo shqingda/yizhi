@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 import { Field, HighlightsEditor, ListControls, moveItem } from "./ListControls";
 
 export type EditorTab = "basics" | SectionKey | "theme";
@@ -42,20 +43,6 @@ export function BasicsForm({ resume, setResume }: FormProps) {
 				<Field label="电话">
 					<Input value={basics.phone ?? ""} onChange={(e) => update({ phone: e.target.value })} />
 				</Field>
-				<Field label="求职状态">
-					<Input
-						value={basics.status ?? ""}
-						placeholder="在职 / 离职 / 求职中"
-						onChange={(e) => update({ status: e.target.value })}
-					/>
-				</Field>
-				<Field label="到岗 / 时间">
-					<Input
-						value={basics.availableFrom ?? ""}
-						placeholder="2026/06"
-						onChange={(e) => update({ availableFrom: e.target.value })}
-					/>
-				</Field>
 				<Field label="城市">
 					<Input value={basics.location ?? ""} onChange={(e) => update({ location: e.target.value })} />
 				</Field>
@@ -91,7 +78,7 @@ export function SkillsForm({ resume, setResume }: FormProps) {
 	return (
 		<div className="grid gap-3">
 			{resume.skills.map((skill, index) => (
-				<div key={skill.id} className="rounded-lg border bg-white p-3">
+				<div key={skill.id} className="rounded-xl border border-black/8 bg-white p-3">
 					<div className="mb-2 flex justify-end">
 						<ListControls
 							index={index}
@@ -158,7 +145,7 @@ export function ExperienceForm({ resume, setResume }: FormProps) {
 	return (
 		<div className="grid gap-3">
 			{resume.experience.map((item, index) => (
-				<div key={item.id} className="rounded-lg border bg-white p-3">
+				<div key={item.id} className="rounded-xl border border-black/8 bg-white p-3">
 					<div className="mb-2 flex justify-end">
 						<ListControls
 							index={index}
@@ -276,7 +263,7 @@ export function ProjectsForm({ resume, setResume }: FormProps) {
 	return (
 		<div className="grid gap-3">
 			{resume.projects.map((item, index) => (
-				<div key={item.id} className="rounded-lg border bg-white p-3">
+				<div key={item.id} className="rounded-xl border border-black/8 bg-white p-3">
 					<div className="mb-2 flex justify-end">
 						<ListControls
 							index={index}
@@ -383,7 +370,7 @@ export function EducationForm({ resume, setResume }: FormProps) {
 	return (
 		<div className="grid gap-3">
 			{resume.education.map((item, index) => (
-				<div key={item.id} className="rounded-lg border bg-white p-3">
+				<div key={item.id} className="rounded-xl border border-black/8 bg-white p-3">
 					<div className="mb-2 flex justify-end">
 						<ListControls
 							index={index}
@@ -530,7 +517,7 @@ export function AwardsForm({ resume, setResume }: FormProps) {
 	return (
 		<div className="grid gap-3">
 			{resume.awards.map((item, index) => (
-				<div key={item.id} className="rounded-lg border bg-white p-3">
+				<div key={item.id} className="rounded-xl border border-black/8 bg-white p-3">
 					<div className="mb-2 flex justify-end">
 						<ListControls
 							index={index}
@@ -611,7 +598,7 @@ export function PublicationsForm({ resume, setResume }: FormProps) {
 	return (
 		<div className="grid gap-3">
 			{resume.publications.map((item, index) => (
-				<div key={item.id} className="rounded-lg border bg-white p-3">
+				<div key={item.id} className="rounded-xl border border-black/8 bg-white p-3">
 					<div className="mb-2 flex justify-end">
 						<ListControls
 							index={index}
@@ -710,7 +697,7 @@ export function LanguagesForm({ resume, setResume }: FormProps) {
 	return (
 		<div className="grid gap-3">
 			{resume.languages.map((item, index) => (
-				<div key={item.id} className="flex items-end gap-2 rounded-lg border bg-white p-3">
+				<div key={item.id} className="flex items-end gap-2 rounded-xl border border-black/8 bg-white p-3">
 					<Field label="语言">
 						<Input
 							value={item.language}
@@ -775,7 +762,7 @@ export function CustomSectionsForm({ resume, setResume }: FormProps) {
 	return (
 		<div className="grid gap-4">
 			{resume.customSections.map((section, sectionIndex) => (
-				<div key={section.id} className="rounded-lg border bg-white p-3">
+				<div key={section.id} className="rounded-xl border border-black/8 bg-white p-3">
 					<div className="mb-2 flex items-center justify-between gap-2">
 						<Field label="区块标题">
 							<Input
@@ -963,33 +950,43 @@ const SECTION_LABELS: Record<SectionKey, string> = {
 
 export function ThemeForm({ resume, setResume }: FormProps) {
 	const meta = resume.meta;
+	const layoutMode = meta.layoutMode === "multi" ? "multi" : "single";
 	return (
-		<div className="grid gap-4">
-			<Field label="强调色">
-				<div className="flex items-center gap-3">
-					<input
-						type="color"
-						value={meta.accentColor}
-						onChange={(e) =>
-							setResume((current) => ({
-								...current,
-								meta: { ...current.meta, accentColor: e.target.value },
-							}))
-						}
-						className="h-9 w-12 cursor-pointer rounded border bg-white p-1"
-					/>
-					<Input
-						value={meta.accentColor}
-						onChange={(e) =>
-							setResume((current) => ({
-								...current,
-								meta: { ...current.meta, accentColor: e.target.value },
-							}))
-						}
-					/>
+		<div className="grid gap-5">
+			<div>
+				<p className="mb-2 text-sm font-medium text-neutral-700">纸张排版</p>
+				<div className="grid grid-cols-2 gap-2">
+					{(
+						[
+							{ id: "single", title: "长图", hint: "整份渲成一张图，高度随内容变化，适合分享预览" },
+							{ id: "multi", title: "A4", hint: "分页高保真文字稿，适合打印和投递" },
+						] as const
+					).map((option) => (
+						<button
+							key={option.id}
+							type="button"
+							onClick={() =>
+								setResume((current) => ({
+									...current,
+									meta: { ...current.meta, layoutMode: option.id },
+								}))
+							}
+							className={cn(
+								"pressable rounded-xl border px-3 py-3 text-left transition-colors duration-100",
+								layoutMode === option.id
+									? "border-neutral-900 bg-neutral-900 text-white"
+									: "border-black/10 bg-white text-neutral-700 hover:bg-neutral-50",
+							)}
+						>
+							<p className="text-sm font-medium">{option.title}</p>
+							<p className={cn("mt-1 text-xs leading-relaxed", layoutMode === option.id ? "text-white/70" : "text-neutral-500")}>
+								{option.hint}
+							</p>
+						</button>
+					))}
 				</div>
-			</Field>
-			<Field label={`字号缩放 ${meta.fontScale.toFixed(2)}`}>
+			</div>
+			<Field label={`字号基准 ${meta.fontScale.toFixed(2)}`}>
 				<input
 					type="range"
 					min={0.85}
@@ -1005,7 +1002,7 @@ export function ThemeForm({ resume, setResume }: FormProps) {
 				/>
 			</Field>
 			<label className="flex items-center justify-between gap-3 text-sm">
-				<span className="font-medium text-stone-700">显示照片</span>
+				<span className="font-medium text-neutral-700">显示照片</span>
 				<Switch
 					checked={meta.showPhoto}
 					onCheckedChange={(checked) =>
@@ -1017,10 +1014,10 @@ export function ThemeForm({ resume, setResume }: FormProps) {
 				/>
 			</label>
 			<div>
-				<p className="mb-2 text-sm font-medium text-stone-700">区块顺序</p>
+				<p className="mb-2 text-sm font-medium text-neutral-700">栏目顺序</p>
 				<div className="grid gap-2">
 					{meta.sectionOrder.map((key, index) => (
-						<div key={key} className="flex items-center justify-between rounded-md border bg-white px-3 py-1.5">
+						<div key={key} className="flex items-center justify-between rounded-xl border border-black/8 bg-white px-3 py-1.5">
 							<span className="text-sm">{SECTION_LABELS[key] ?? key}</span>
 							<ListControls
 								index={index}
@@ -1039,7 +1036,7 @@ export function ThemeForm({ resume, setResume }: FormProps) {
 						</div>
 					))}
 				</div>
-				<p className="mt-2 text-xs text-muted-foreground">空区块不会打印。删除按钮在此处禁用，以免打乱模板。</p>
+				<p className="mt-2 text-xs text-muted-foreground">空栏目不会出现在简历上。此处不可删除栏目，以免打乱模板。</p>
 			</div>
 		</div>
 	);

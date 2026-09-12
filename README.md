@@ -1,8 +1,8 @@
 # Resume Studio · 简历工坊
 
-在线简历生成器：左侧表单 + 右侧 A4 实时预览，公开分享页，打印 / PDF 导出。默认模板为经典中文技术简历（居中姓名、联系行、蓝色强调标题）。示例数据为 **商庆达**。
+在线简历生成器：左侧表单 + 右侧 A4 实时预览，公开分享页，打印 / PDF 导出。默认模板为经典中文技术简历（居中姓名、联系行、蓝色强调标题）。
 
-A Magic Resume–style editor with a shareable public page. Preview, print, and PDF share one A4 layout. Seeded with Shang Qingda’s resume.
+A Magic Resume–style editor with a shareable public page. Preview, print, and PDF share one A4 layout.
 
 ## Stack
 

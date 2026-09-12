@@ -1,4 +1,16 @@
 export const SECTION_KEYS = [
+	"education",
+	"experience",
+	"projects",
+	"skills",
+	"awards",
+	"publications",
+	"languages",
+	"custom",
+] as const;
+
+/** Pre-redesign default order — migrate leftover drafts to the current template. */
+const LEGACY_SECTION_ORDER = [
 	"skills",
 	"experience",
 	"projects",
@@ -8,6 +20,8 @@ export const SECTION_KEYS = [
 	"languages",
 	"custom",
 ] as const;
+
+export type LayoutMode = "single" | "multi";
 
 export type SectionKey = (typeof SECTION_KEYS)[number];
 
@@ -102,6 +116,7 @@ export interface ResumeMeta {
 	accentColor: string;
 	fontScale: number;
 	showPhoto: boolean;
+	layoutMode: LayoutMode;
 	sectionOrder: SectionKey[];
 }
 
@@ -119,10 +134,26 @@ export interface Resume {
 }
 
 export const DEFAULT_META: ResumeMeta = {
-	accentColor: "#2563eb",
+	accentColor: "#111111",
 	fontScale: 1,
 	showPhoto: false,
+	layoutMode: "multi",
 	sectionOrder: [...SECTION_KEYS],
+};
+
+function sameSectionOrder(
+	left: readonly string[],
+	right: readonly string[],
+): boolean {
+	return left.length === right.length && left.every((key, index) => key === right[index]);
+}
+
+const SAMPLE_PROJECT_DATES: Record<string, { startDate: string; endDate: string }> = {
+	proj_cloud: { startDate: "2022/04", endDate: "2022/06" },
+	proj_music: { startDate: "2020/09", endDate: "2021/01" },
+	proj_blog: { startDate: "2020/03", endDate: "2020/06" },
+	proj_mooc: { startDate: "2018/10", endDate: "2019/06" },
+	proj_bot: { startDate: "2018/01", endDate: "2018/05" },
 };
 
 export const DEFAULT_SLUG = "shqingda";
@@ -181,10 +212,16 @@ export function normalizeResume(input: unknown): Resume {
 			) as SectionKey[])
 		: [];
 
-	const sectionOrder = [
+	const mergedOrder = [
 		...order,
 		...SECTION_KEYS.filter((key) => !order.includes(key)),
 	];
+	const sectionOrder = sameSectionOrder(mergedOrder, LEGACY_SECTION_ORDER)
+		? [...SECTION_KEYS]
+		: mergedOrder;
+
+	const rawAccent = asString(metaRaw.accentColor, DEFAULT_META.accentColor);
+	const accentColor = rawAccent.toLowerCase() === "#2563eb" ? DEFAULT_META.accentColor : rawAccent;
 
 	return {
 		basics: {
@@ -226,12 +263,14 @@ export function normalizeResume(input: unknown): Resume {
 		projects: Array.isArray(raw.projects)
 			? raw.projects.map((item, index) => {
 					const row = (item ?? {}) as Record<string, unknown>;
+					const id = asString(row.id, uid(`proj${index}`));
+					const sampled = SAMPLE_PROJECT_DATES[id];
 					return {
-						id: asString(row.id, uid(`proj${index}`)),
+						id,
 						name: asString(row.name),
 						role: asString(row.role) || undefined,
-						startDate: asString(row.startDate) || undefined,
-						endDate: asString(row.endDate) || undefined,
+						startDate: asString(row.startDate) || sampled?.startDate,
+						endDate: asString(row.endDate) || sampled?.endDate,
 						url: asString(row.url) || undefined,
 						highlights: asStringArray(row.highlights),
 					};
@@ -309,9 +348,10 @@ export function normalizeResume(input: unknown): Resume {
 				})
 			: [],
 		meta: {
-			accentColor: asString(metaRaw.accentColor, DEFAULT_META.accentColor),
+			accentColor,
 			fontScale: asNumber(metaRaw.fontScale, DEFAULT_META.fontScale),
 			showPhoto: asBoolean(metaRaw.showPhoto, DEFAULT_META.showPhoto),
+			layoutMode: metaRaw.layoutMode === "single" ? "single" : "multi",
 			sectionOrder,
 		},
 	};
