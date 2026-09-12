@@ -44,7 +44,6 @@ export function useResume() {
 			cancelled = true;
 		};
 		// Load once on mount; slug edits after that are user-driven.
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
 	useEffect(() => {

@@ -205,10 +205,12 @@ export function EditorPage() {
 							{exporting ? "导出中" : layoutMode === "single" ? "导出长图" : "导出 A4"}
 						</Button>
 						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<Button size="icon" variant="ghost" aria-label="更多" className="size-9 rounded-full">
-									<Ellipsis />
-								</Button>
+							<DropdownMenuTrigger
+								render={
+									<Button size="icon" variant="ghost" aria-label="更多" className="size-9 rounded-full" />
+								}
+							>
+								<Ellipsis />
 							</DropdownMenuTrigger>
 							<DropdownMenuContent align="end" className="w-64">
 								<DropdownMenuLabel>
@@ -216,13 +218,11 @@ export function EditorPage() {
 									{cloudUpdatedAt ? ` · ${cloudUpdatedAt.slice(0, 16).replace("T", " ")}` : ""}
 								</DropdownMenuLabel>
 								<DropdownMenuSeparator />
-								<DropdownMenuItem asChild>
-									<Link to={`/r/${slug}`}>
-										<ExternalLink /> 打开公开页
-									</Link>
+								<DropdownMenuItem render={<Link to={`/r/${slug}`} />}>
+									<ExternalLink /> 打开公开页
 								</DropdownMenuItem>
 								<DropdownMenuItem
-									onSelect={() => {
+									onClick={() => {
 										void persistCloud().then((ok) => {
 											toast[ok ? "success" : "message"](ok ? "已写入云端" : "当前仅保存在浏览器");
 										});
@@ -231,14 +231,14 @@ export function EditorPage() {
 								>
 									<Save /> {saving ? "保存中" : "保存到云端"}
 								</DropdownMenuItem>
-								<DropdownMenuItem onSelect={() => downloadJson(resume, `resume-${slug}.json`)}>
+								<DropdownMenuItem onClick={() => downloadJson(resume, `resume-${slug}.json`)}>
 									<Download /> 导出 JSON
 								</DropdownMenuItem>
-								<DropdownMenuItem onSelect={() => fileRef.current?.click()}>
+								<DropdownMenuItem onClick={() => fileRef.current?.click()}>
 									<Upload /> 导入 JSON
 								</DropdownMenuItem>
 								<DropdownMenuItem
-									onSelect={() => {
+									onClick={() => {
 										if (confirm("恢复为示例简历？未导出的修改会丢失。")) {
 											resetSample();
 											toast.success("已恢复示例数据");
