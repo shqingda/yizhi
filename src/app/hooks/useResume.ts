@@ -31,12 +31,14 @@ export function useResume() {
 			setDbAvailable(health.db);
 			if (health.db) {
 				const remote = await fetchResume(slug);
-				if (cancelled || !remote?.data) return;
-				const hasLocal = Boolean(localStorage.getItem("resume-studio:draft"));
-				if (!hasLocal) {
-					setResume(normalizeResume(remote.data));
+				if (cancelled) return;
+				if (remote?.data) {
+					const hasLocal = Boolean(localStorage.getItem("resume-studio:draft"));
+					if (!hasLocal) {
+						setResume(normalizeResume(remote.data));
+					}
+					setCloudUpdatedAt(remote.updatedAt);
 				}
-				setCloudUpdatedAt(remote.updatedAt);
 			}
 			setHydrated(true);
 		})();
