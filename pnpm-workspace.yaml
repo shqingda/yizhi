@@ -5,7 +5,7 @@ allowBuilds:
   esbuild: true
   workerd: true
   sharp: true
-  core-js: set this to true or false
+  core-js: true
 
 # rollup@4.63.2 landed today and fails pnpm's default 24h minimumReleaseAge.
 # Pin the last mature release until 4.63.2 is old enough to install.

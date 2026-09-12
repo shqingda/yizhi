@@ -135,7 +135,7 @@ export function SkillsForm({ resume, setResume }: FormProps) {
 					])
 				}
 			>
-				<Plus /> 添加技能类别
+				<Plus data-icon="inline-start" /> 添加技能类别
 			</Button>
 		</div>
 	);
@@ -253,7 +253,7 @@ export function ExperienceForm({ resume, setResume }: FormProps) {
 					])
 				}
 			>
-				<Plus /> 添加工作 / 实习
+				<Plus data-icon="inline-start" /> 添加工作 / 实习
 			</Button>
 		</div>
 	);
@@ -360,7 +360,7 @@ export function ProjectsForm({ resume, setResume }: FormProps) {
 					])
 				}
 			>
-				<Plus /> 添加项目
+				<Plus data-icon="inline-start" /> 添加项目
 			</Button>
 		</div>
 	);
@@ -507,7 +507,7 @@ export function EducationForm({ resume, setResume }: FormProps) {
 					])
 				}
 			>
-				<Plus /> 添加教育经历
+				<Plus data-icon="inline-start" /> 添加教育经历
 			</Button>
 		</div>
 	);
@@ -588,7 +588,7 @@ export function AwardsForm({ resume, setResume }: FormProps) {
 					])
 				}
 			>
-				<Plus /> 添加获奖
+				<Plus data-icon="inline-start" /> 添加获奖
 			</Button>
 		</div>
 	);
@@ -687,7 +687,7 @@ export function PublicationsForm({ resume, setResume }: FormProps) {
 					])
 				}
 			>
-				<Plus /> 添加论文
+				<Plus data-icon="inline-start" /> 添加论文
 			</Button>
 		</div>
 	);
@@ -752,7 +752,7 @@ export function LanguagesForm({ resume, setResume }: FormProps) {
 					])
 				}
 			>
-				<Plus /> 添加语言
+				<Plus data-icon="inline-start" /> 添加语言
 			</Button>
 		</div>
 	);
@@ -916,7 +916,7 @@ export function CustomSectionsForm({ resume, setResume }: FormProps) {
 								)
 							}
 						>
-							<Plus /> 添加条目
+							<Plus data-icon="inline-start" /> 添加条目
 						</Button>
 					</div>
 				</div>
@@ -931,7 +931,7 @@ export function CustomSectionsForm({ resume, setResume }: FormProps) {
 					])
 				}
 			>
-				<Plus /> 添加自定义区块
+				<Plus data-icon="inline-start" /> 添加自定义区块
 			</Button>
 		</div>
 	);

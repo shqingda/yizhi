@@ -70,9 +70,7 @@ export function PublicResumePage() {
 			<div className="mx-auto flex min-h-screen max-w-lg flex-col items-center justify-center gap-4 px-6 text-center">
 				<h1 className="text-xl font-semibold">简历不存在</h1>
 				<p className="text-sm text-muted-foreground">{error}</p>
-				<Button asChild>
-					<Link to="/editor">回到编辑器</Link>
-				</Button>
+				<Button render={<Link to="/editor" />}>回到编辑器</Button>
 			</div>
 		);
 	}
@@ -103,11 +101,11 @@ export function PublicResumePage() {
 					</p>
 				</div>
 				<div className="flex gap-2">
-					<Button size="sm" variant="outline" asChild>
-						<Link to="/editor">编辑</Link>
+					<Button size="sm" variant="outline" render={<Link to="/editor" />}>
+						编辑
 					</Button>
 					<Button size="sm" disabled={exporting} onClick={() => void handleExport()}>
-						<Share />
+						<Share data-icon="inline-start" />
 						{exporting ? "导出中" : layoutMode === "single" ? "导出长图" : "导出 A4"}
 					</Button>
 				</div>

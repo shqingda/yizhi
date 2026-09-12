@@ -8,8 +8,8 @@ export default defineConfig({
 	plugins: [react(), tailwindcss(), cloudflare()],
 	resolve: {
 		alias: {
-			"@": path.resolve(__dirname, "./src/react-app"),
-			"@shared": path.resolve(__dirname, "./src/shared"),
+			"@": path.resolve(import.meta.dirname, "./src/app"),
+			"@shared": path.resolve(import.meta.dirname, "./src/shared"),
 		},
 	},
 	server: {

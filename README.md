@@ -6,7 +6,7 @@ A Magic Resume–style editor with a shareable public page. Preview, print, and 
 
 ## Stack
 
-- **pnpm** · **Vite 7** · **React 19** · **TypeScript**
+- **pnpm** · **Vite 8** · **React 19** · **TypeScript 7**
 - **Tailwind CSS v4** · **shadcn/ui**
 - **Hono** API on **Cloudflare Workers**
 - **Drizzle ORM** + **Cloudflare D1**
@@ -72,7 +72,7 @@ pnpm deploy
 1. 打开编辑器改各区块，或导入 `public/sample-resume.json` 为起点。
 2. 类型定义见 `src/shared/schema.ts`：`basics`, `skills[]`, `experience[]`, `projects[]`, `education[]`, `awards?`, `publications?`, `languages?`, `customSections?`, `meta?`。
 3. 示例数据：`src/shared/seed.ts`。
-4. 版式：`src/react-app/components/resume/ResumeDocument.tsx` 与 `src/react-app/index.css`。
+4. 版式：`src/app/components/resume/ResumeDocument.tsx` 与 `src/app/index.css`。
 
 ## 项目结构
 
@@ -81,7 +81,7 @@ src/worker/index.ts          Hono API
 src/db/schema.ts             Drizzle D1
 src/shared/schema.ts         简历类型与规范化
 src/shared/seed.ts           商庆达示例
-src/react-app/pages/         编辑器 / 公开页
+src/app/pages/               编辑器 / 公开页
 drizzle/                     SQL migrations
 wrangler.toml
 drizzle.config.ts
