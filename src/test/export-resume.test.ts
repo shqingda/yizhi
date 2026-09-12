@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { exportResumePdf } from "./exportResume";
+import { exportResumePdf } from "@/lib/exportResume";
 
 describe("exportResumePdf", () => {
 	it("throws when the preview root is missing", async () => {

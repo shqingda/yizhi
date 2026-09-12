@@ -1,6 +1,7 @@
+/// <reference path="../../worker-configuration.d.ts" />
 import { describe, expect, it } from "vitest";
-import { SAMPLE_ID, SAMPLE_RESUME, SAMPLE_SLUG } from "../shared/seed";
-import app from "./index";
+import { SAMPLE_ID, SAMPLE_RESUME, SAMPLE_SLUG } from "@shared/seed";
+import app from "../worker/index";
 
 const env = {} as Env;
 

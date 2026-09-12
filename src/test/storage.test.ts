@@ -7,7 +7,7 @@ import {
 	loadLocalSlug,
 	saveLocalResume,
 	saveLocalSlug,
-} from "./storage";
+} from "@/lib/storage";
 
 afterEach(() => {
 	localStorage.clear();

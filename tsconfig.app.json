@@ -22,5 +22,5 @@
 			"@shared/*": ["./src/shared/*"]
 		}
 	},
-	"include": ["src/app", "src/shared", "src/test"]
+	"include": ["src/app", "src/shared", "src/test", "worker-configuration.d.ts"]
 }

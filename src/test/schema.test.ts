@@ -6,8 +6,8 @@ import {
 	isResumeLike,
 	normalizeResume,
 	uid,
-} from "./schema";
-import { SAMPLE_RESUME } from "./seed";
+} from "@shared/schema";
+import { SAMPLE_RESUME } from "@shared/seed";
 
 describe("uid", () => {
 	it("uses the given prefix and returns unique values", () => {
@@ -128,9 +128,7 @@ describe("normalizeResume", () => {
 		});
 		expect(resume.meta.sectionOrder[0]).toBe("projects");
 		expect(resume.meta.sectionOrder[1]).toBe("education");
-		expect(resume.meta.sectionOrder).toEqual(
-			expect.arrayContaining([...SECTION_KEYS]),
-		);
+		expect(resume.meta.sectionOrder).toEqual(expect.arrayContaining([...SECTION_KEYS]));
 		expect(new Set(resume.meta.sectionOrder).size).toBe(SECTION_KEYS.length);
 	});
 

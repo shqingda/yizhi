@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SAMPLE_RESUME } from "@shared/seed";
-import { jsonResponse } from "../../test/http";
-import { fetchHealth, fetchResume, saveResume } from "./api";
+import { fetchHealth, fetchResume, saveResume } from "@/lib/api";
+import { jsonResponse } from "./helpers/http";
 
 afterEach(() => {
 	vi.unstubAllGlobals();

@@ -1,9 +1,9 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SAMPLE_RESUME } from "@shared/seed";
+import { useResume } from "@/hooks/useResume";
 import { STORAGE_KEY } from "@/lib/storage";
-import { jsonResponse } from "../../test/http";
-import { useResume } from "./useResume";
+import { jsonResponse } from "./helpers/http";
 
 function mockApi(options?: {
 	db?: boolean;
