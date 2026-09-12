@@ -1,11 +1,11 @@
 # project
 
-2026-09-12, whole-project Radix → Base UI. Style is legacy `new-york` (classification only; no `base-new-york` counterpart). Transformation engine on the project's own wrappers. `src/react-app` renamed to `src/app` in the same pass.
+2026-09-12, whole-project Radix → Base UI, then restyle to shadcn default `base-nova`. `src/react-app` renamed to `src/app` in the same pass.
 
 ## Dependency swap
 
 - Installed `@base-ui/react@1.8.0` alongside Radix, then removed every `@radix-ui/react-*` package after the last wrapper migrated (including unused scroll-area / select / tabs / tooltip — no wrappers existed).
-- `components.json` style left as `new-york`. FLAG: future `shadcn add` will still deliver Radix variants unless the style is changed or files are added by hand. There is no `base-new-york`.
+- `components.json` style is now `base-nova`. Future `shadcn add` delivers Base UI nova variants.
 - ESLint packages and `eslint.config.js` removed (requested separately). Vite 8.3.0 + TypeScript 7.0.2; `baseUrl` deleted from tsconfigs (TS 7 TS5102).
 
 ## App-code sweep

@@ -105,7 +105,7 @@ export function PublicResumePage() {
 						编辑
 					</Button>
 					<Button size="sm" disabled={exporting} onClick={() => void handleExport()}>
-						<Share />
+						<Share data-icon="inline-start" />
 						{exporting ? "导出中" : layoutMode === "single" ? "导出长图" : "导出 A4"}
 					</Button>
 				</div>

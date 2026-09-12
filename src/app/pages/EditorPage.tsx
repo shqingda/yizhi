@@ -30,6 +30,7 @@ import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
+	DropdownMenuGroup,
 	DropdownMenuItem,
 	DropdownMenuLabel,
 	DropdownMenuSeparator,
@@ -201,7 +202,7 @@ export function EditorPage() {
 					</div>
 					<div className="ml-auto flex items-center gap-2">
 						<Button size="sm" disabled={exporting} onClick={() => void handleExport()}>
-							<Share />
+							<Share data-icon="inline-start" />
 							{exporting ? "导出中" : layoutMode === "single" ? "导出长图" : "导出 A4"}
 						</Button>
 						<DropdownMenu>
@@ -218,6 +219,7 @@ export function EditorPage() {
 									{cloudUpdatedAt ? ` · ${cloudUpdatedAt.slice(0, 16).replace("T", " ")}` : ""}
 								</DropdownMenuLabel>
 								<DropdownMenuSeparator />
+								<DropdownMenuGroup>
 								<DropdownMenuItem render={<Link to={`/r/${slug}`} />}>
 									<ExternalLink /> 打开公开页
 								</DropdownMenuItem>
@@ -247,6 +249,7 @@ export function EditorPage() {
 								>
 									<RotateCcw /> 重置示例
 								</DropdownMenuItem>
+								</DropdownMenuGroup>
 								<DropdownMenuSeparator />
 								<DropdownMenuLabel>公开地址</DropdownMenuLabel>
 								<div className="px-2 pb-2">
