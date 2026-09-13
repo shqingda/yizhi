@@ -1,11 +1,54 @@
 import { useLayoutEffect, useState, type RefObject } from "react";
+import { paginateBlocks, type PaginateBlock, type PageBreak } from "@shared/paginate";
 import type { LayoutMode } from "@shared/schema";
 
 const PAGE_RATIO = 297 / 210;
+const SPACER_CLASS = "resume-page-spacer";
 
 export interface ResumeLayoutInfo {
 	pageCount: number;
 	height: number;
+}
+
+function parsePx(value: string) {
+	const n = Number.parseFloat(value);
+	return Number.isFinite(n) ? n : 0;
+}
+
+function clearSpacers(inner: HTMLElement) {
+	inner.querySelectorAll(`.${SPACER_CLASS}`).forEach((node) => node.remove());
+}
+
+function applySpacers(inner: HTMLElement, breaks: readonly PageBreak[]) {
+	clearSpacers(inner);
+	for (const item of breaks) {
+		const el = inner.querySelector(`[data-block-id="${CSS.escape(item.afterId)}"]`);
+		if (!el) continue;
+		const spacer = document.createElement("div");
+		spacer.className = SPACER_CLASS;
+		spacer.setAttribute("aria-hidden", "true");
+		spacer.style.height = `${Math.max(0, item.height)}px`;
+		el.after(spacer);
+	}
+}
+
+function measureBlocks(inner: HTMLElement): PaginateBlock[] {
+	return [...inner.querySelectorAll<HTMLElement>("[data-block-id]")]
+		.map((node) => {
+			const style = getComputedStyle(node);
+			let height = node.offsetHeight + parsePx(style.marginTop) + parsePx(style.marginBottom);
+			const parent = node.parentElement;
+			if (parent?.classList.contains("resume-section") && parent.firstElementChild === node) {
+				const parentStyle = getComputedStyle(parent);
+				height += parsePx(parentStyle.marginTop) + parsePx(parentStyle.marginBottom);
+			}
+			return {
+				id: node.dataset.blockId ?? "",
+				height,
+				kind: node.dataset.blockKind === "keep" ? "keep" : "unit",
+			} satisfies PaginateBlock;
+		})
+		.filter((block) => block.id);
 }
 
 export function useResumeFit(
@@ -29,22 +72,15 @@ export function useResumeFit(
 			sheet.style.setProperty("--resume-type-fit", typeFit.toFixed(4));
 		};
 
-		const measure = () => inner.scrollHeight;
-
 		const pageHeight = () => Math.max(1, sheet.clientWidth * PAGE_RATIO);
 
 		const contentBox = () => {
 			const style = getComputedStyle(sheet);
-			const pad =
-				Number.parseFloat(style.paddingTop) + Number.parseFloat(style.paddingBottom);
+			const pad = parsePx(style.paddingTop) + parsePx(style.paddingBottom);
 			return Math.max(120, pageHeight() - pad);
 		};
 
-		const search = (
-			lo: number,
-			hi: number,
-			fits: (value: number) => boolean,
-		) => {
+		const search = (lo: number, hi: number, fits: (value: number) => boolean) => {
 			let best = lo;
 			for (let i = 0; i < 9; i += 1) {
 				const mid = (lo + hi) / 2;
@@ -58,10 +94,17 @@ export function useResumeFit(
 			return best;
 		};
 
+		const pack = () => {
+			clearSpacers(inner);
+			void inner.offsetHeight;
+			return paginateBlocks(measureBlocks(inner), contentBox());
+		};
+
 		const run = () => {
 			if (cancelled || !sheet.isConnected) return;
 
 			if (mode === "single") {
+				clearSpacers(inner);
 				apply(1, 1);
 				void inner.offsetHeight;
 				setInfo({ pageCount: 1, height: sheet.scrollHeight });
@@ -70,29 +113,27 @@ export function useResumeFit(
 
 			const box = contentBox();
 			if (box <= 0) return;
+
 			apply(1, 1);
-			void inner.offsetHeight;
-			const natural = measure();
-			const pages = Math.max(1, Math.ceil(natural / box - 0.02));
-			const target = pages * box * 0.94;
-			if (natural < target && pages >= 1) {
+			let result = pack();
+
+			if (result.lastPageUsed > 0 && result.lastPageUsed < box * 0.88) {
+				const pages = result.pageCount;
 				const gap = search(1, 1.22, (value) => {
 					apply(value, 1);
-					void inner.offsetHeight;
-					return measure() <= pages * box - 8;
+					const next = pack();
+					return next.pageCount <= pages;
 				});
 				apply(gap, 1);
-				void inner.offsetHeight;
-				const afterPages = Math.max(1, Math.ceil(measure() / box - 0.02));
-				if (afterPages > pages) {
+				result = pack();
+				if (result.pageCount > pages) {
 					apply(1, 1);
-					setInfo({ pageCount: pages, height: pages * pageHeight() });
-					return;
+					result = pack();
 				}
-				setInfo({ pageCount: afterPages, height: afterPages * pageHeight() });
-				return;
 			}
-			setInfo({ pageCount: pages, height: pages * pageHeight() });
+
+			applySpacers(inner, result.breaks);
+			setInfo({ pageCount: result.pageCount, height: result.pageCount * pageHeight() });
 		};
 
 		run();

@@ -5,6 +5,7 @@ import { drizzle, type DrizzleD1Database } from "drizzle-orm/d1";
 import { resumes } from "../db/schema";
 import { DEFAULT_SLUG, normalizeResume } from "../shared/schema";
 import { SAMPLE_ID, SAMPLE_RESUME, SAMPLE_SLUG } from "../shared/seed";
+import { isStaleWrite } from "../shared/sync";
 
 type AppEnv = { Bindings: Env };
 
@@ -152,10 +153,29 @@ app.put("/api/resumes/:idOrSlug", async (c) => {
 				: idOrSlug;
 	const now = new Date().toISOString();
 
+	const baseUpdatedAt =
+		typeof payload.baseUpdatedAt === "string"
+			? payload.baseUpdatedAt
+			: c.req.header("If-Match");
+
 	const [existing] = await db
 		.select()
 		.from(resumes)
 		.where(or(eq(resumes.id, id), eq(resumes.slug, slug), eq(resumes.id, idOrSlug), eq(resumes.slug, idOrSlug)));
+
+	if (existing && isStaleWrite(existing.updatedAt, baseUpdatedAt)) {
+		const current = parseResumeJson(existing.data);
+		return c.json(
+			{
+				error: "conflict",
+				id: existing.id,
+				slug: existing.slug,
+				data: current ?? SAMPLE_RESUME,
+				updatedAt: existing.updatedAt,
+			},
+			409,
+		);
+	}
 
 	if (existing) {
 		await db

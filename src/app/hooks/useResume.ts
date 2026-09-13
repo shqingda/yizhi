@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { normalizeResume, type Resume } from "@shared/schema";
 import { SAMPLE_RESUME } from "@shared/seed";
 import { fetchHealth, fetchResume, saveResume } from "@/lib/api";
@@ -9,6 +10,8 @@ import {
 	saveLocalSlug,
 } from "@/lib/storage";
 
+export type PersistResult = "ok" | "conflict" | "local";
+
 export function useResume() {
 	const [resume, setResume] = useState<Resume>(() =>
 		typeof window === "undefined" ? structuredClone(SAMPLE_RESUME) : loadLocalResume(),
@@ -18,10 +21,12 @@ export function useResume() {
 	);
 	const [dbAvailable, setDbAvailable] = useState(false);
 	const [cloudUpdatedAt, setCloudUpdatedAt] = useState<string | null>(null);
+	const [cloudConflict, setCloudConflict] = useState(false);
 	const [saving, setSaving] = useState(false);
 	const [hydrated, setHydrated] = useState(false);
 	const resumeRef = useRef(resume);
 	resumeRef.current = resume;
+	const conflictNotified = useRef(false);
 
 	useEffect(() => {
 		let cancelled = false;
@@ -68,28 +73,45 @@ export function useResume() {
 		setResume(structuredClone(SAMPLE_RESUME));
 	}, []);
 
-	const persistCloud = useCallback(async () => {
-		if (!dbAvailable) return false;
-		setSaving(true);
-		try {
-			const saved = await saveResume(slug, resumeRef.current, slug);
-			if (saved) {
-				setCloudUpdatedAt(saved.updatedAt);
-				return true;
+	const persistCloud = useCallback(
+		async (options?: { force?: boolean }): Promise<PersistResult> => {
+			if (!dbAvailable) return "local";
+			if (cloudConflict && !options?.force) return "conflict";
+			setSaving(true);
+			try {
+				const saved = await saveResume(slug, resumeRef.current, slug, {
+					baseUpdatedAt: cloudUpdatedAt,
+					force: options?.force,
+				});
+				if (saved.status === "saved") {
+					setCloudUpdatedAt(saved.resume.updatedAt);
+					setCloudConflict(false);
+					conflictNotified.current = false;
+					return "ok";
+				}
+				if (saved.status === "conflict") {
+					setCloudConflict(true);
+					if (!conflictNotified.current) {
+						conflictNotified.current = true;
+						toast.message("云端有更新，已保留本地稿。可在菜单里覆盖保存。");
+					}
+					return "conflict";
+				}
+				return "local";
+			} finally {
+				setSaving(false);
 			}
-			return false;
-		} finally {
-			setSaving(false);
-		}
-	}, [dbAvailable, slug]);
+		},
+		[cloudConflict, cloudUpdatedAt, dbAvailable, slug],
+	);
 
 	useEffect(() => {
-		if (!hydrated || !dbAvailable) return;
+		if (!hydrated || !dbAvailable || cloudConflict) return;
 		const timer = window.setTimeout(() => {
 			void persistCloud();
 		}, 1600);
 		return () => window.clearTimeout(timer);
-	}, [resume, hydrated, dbAvailable, persistCloud]);
+	}, [resume, hydrated, dbAvailable, cloudConflict, persistCloud]);
 
 	return {
 		resume,
@@ -100,6 +122,7 @@ export function useResume() {
 		setSlug,
 		dbAvailable,
 		cloudUpdatedAt,
+		cloudConflict,
 		saving,
 		persistCloud,
 		hydrated,

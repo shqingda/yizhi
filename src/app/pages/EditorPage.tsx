@@ -8,10 +8,11 @@ import {
 	PanelLeft,
 	RotateCcw,
 	Save,
+	Settings2,
 	Share,
 	Upload,
 } from "lucide-react";
-import { isResumeLike, normalizeResume } from "@shared/schema";
+import { isResumeLike, normalizeResume, uid } from "@shared/schema";
 import {
 	AwardsForm,
 	BasicsForm,
@@ -43,7 +44,7 @@ import { exportResumePdf } from "@/lib/exportResume";
 import { downloadJson, readJsonFile } from "@/lib/storage";
 import { cn } from "@/lib/utils";
 
-const TABS: { id: EditorTab; label: string }[] = [
+const SECTION_TABS: { id: Exclude<EditorTab, "custom" | "theme">; label: string }[] = [
 	{ id: "basics", label: "基本信息" },
 	{ id: "education", label: "教育经历" },
 	{ id: "experience", label: "工作经验" },
@@ -52,9 +53,13 @@ const TABS: { id: EditorTab; label: string }[] = [
 	{ id: "awards", label: "获奖" },
 	{ id: "publications", label: "论文" },
 	{ id: "languages", label: "语言" },
-	{ id: "custom", label: "自定义" },
-	{ id: "theme", label: "版式" },
 ];
+
+function tabTitle(tab: EditorTab) {
+	if (tab === "theme") return "版式";
+	if (tab === "custom") return "自定义";
+	return SECTION_TABS.find((item) => item.id === tab)?.label ?? "";
+}
 
 const A4_PX = (210 * 96) / 25.4;
 const SIDEBAR_KEY = "resume-studio:sidebar";
@@ -71,8 +76,10 @@ export function EditorPage() {
 		cloudUpdatedAt,
 		saving,
 		persistCloud,
+		cloudConflict,
 	} = useResume();
 	const [tab, setTab] = useState<EditorTab>("basics");
+	const lastContentTab = useRef<EditorTab>("basics");
 	const [scale, setScale] = useState(0.72);
 	const [layoutInfo, setLayoutInfo] = useState<ResumeLayoutInfo>({ pageCount: 1, height: A4_PX * (297 / 210) });
 	const [exporting, setExporting] = useState(false);
@@ -127,16 +134,51 @@ export function EditorPage() {
 		return () => observer.disconnect();
 	}, [sidebarOpen]);
 
-	const toggleSidebar = () => {
+	const toggleSidebar = useCallback(() => {
 		setSidebarOpen((open) => {
 			const next = !open;
 			window.localStorage.setItem(SIDEBAR_KEY, next ? "1" : "0");
 			return next;
 		});
-	};
+	}, []);
+
+	useEffect(() => {
+		const onKeyDown = (event: KeyboardEvent) => {
+			if (event.defaultPrevented || event.repeat) return;
+			if (!(event.metaKey || event.ctrlKey) || event.altKey || event.shiftKey) return;
+			if (event.key.toLowerCase() !== "b") return;
+			event.preventDefault();
+			toggleSidebar();
+		};
+		window.addEventListener("keydown", onKeyDown);
+		return () => window.removeEventListener("keydown", onKeyDown);
+	}, [toggleSidebar]);
+
+	const sidebarShortcut =
+		typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.userAgent) ? "⌘B" : "Ctrl+B";
 
 	const updateResume = (updater: (current: typeof resume) => typeof resume) => {
 		setResume((current) => updater(current));
+	};
+
+	const selectTab = (next: EditorTab) => {
+		if (next !== "theme") lastContentTab.current = next;
+		setTab(next);
+	};
+
+	const toggleTheme = () => {
+		setTab((current) => (current === "theme" ? lastContentTab.current : "theme"));
+	};
+
+	const openCustom = () => {
+		selectTab("custom");
+		setResume((current) => {
+			if (current.customSections.length > 0) return current;
+			return {
+				...current,
+				customSections: [{ id: uid("sec"), title: "自定义区块", items: [] }],
+			};
+		});
 	};
 
 	const formProps = { resume, setResume: updateResume };
@@ -165,13 +207,15 @@ export function EditorPage() {
 						variant="ghost"
 						onClick={toggleSidebar}
 						aria-pressed={sidebarOpen}
-						aria-label={sidebarOpen ? "收起编辑栏" : "打开编辑栏"}
+						aria-keyshortcuts="Meta+B Control+B"
+						aria-label={sidebarOpen ? `收起编辑栏 ${sidebarShortcut}` : `打开编辑栏 ${sidebarShortcut}`}
+						title={sidebarOpen ? `收起编辑栏 ${sidebarShortcut}` : `打开编辑栏 ${sidebarShortcut}`}
 						className="size-9 shrink-0 rounded-full"
 					>
 						<PanelLeft />
 					</Button>
 					<div className="min-w-0">
-						<p className="truncate text-[15px] font-semibold leading-none tracking-tight">简历工坊</p>
+						<p className="truncate text-[15px] font-semibold leading-none tracking-tight">一纸简历</p>
 					</div>
 					<div className="ml-1 flex rounded-full bg-black/5 p-0.5">
 						{(
@@ -226,13 +270,15 @@ export function EditorPage() {
 								<DropdownMenuGroup>
 								<DropdownMenuItem
 									onClick={() => {
-										void persistCloud().then((ok) => {
-											toast[ok ? "success" : "message"](ok ? "已写入云端" : "当前仅保存在浏览器");
+										void persistCloud({ force: cloudConflict }).then((result) => {
+											if (result === "ok") toast.success("已写入云端");
+											else if (result === "conflict") toast.message("云端有更新，已保留本地稿");
+											else toast.message("当前仅保存在浏览器");
 										});
 									}}
 									disabled={saving}
 								>
-									<Save /> {saving ? "保存中" : "保存到云端"}
+									<Save /> {saving ? "保存中" : cloudConflict ? "覆盖保存到云端" : "保存到云端"}
 								</DropdownMenuItem>
 								<DropdownMenuItem onClick={() => downloadJson(resume, `resume-${slug}.json`)}>
 									<Download /> 导出 JSON
@@ -276,25 +322,46 @@ export function EditorPage() {
 				>
 					<div className="studio-sidebar-inner">
 						<nav className="studio-sidebar-nav">
-							{TABS.map((item) => (
+							{SECTION_TABS.map((item) => {
+								const hidden =
+									item.id !== "basics" &&
+									resume.meta.hiddenSections.includes(item.id);
+								return (
 								<button
 									key={item.id}
 									type="button"
-									onClick={() => setTab(item.id)}
+									onClick={() => selectTab(item.id)}
 									className={cn(
 										"pressable rounded-full px-2.5 py-1 text-[13px] transition-colors duration-100",
 										tab === item.id
 											? "bg-neutral-900 font-medium text-white"
 											: "text-neutral-500 hover:bg-white hover:text-neutral-800",
+										hidden && tab !== item.id && "opacity-40",
 									)}
 								>
 									{item.label}
 								</button>
-							))}
+								);
+							})}
+							<button
+								type="button"
+								onClick={openCustom}
+								className={cn(
+									"pressable rounded-full border border-dashed px-2.5 py-1 text-[13px] transition-colors duration-100",
+									tab === "custom"
+										? "border-neutral-900 bg-neutral-900 font-medium text-white"
+										: "border-neutral-300 text-neutral-500 hover:border-neutral-400 hover:bg-white hover:text-neutral-800",
+									resume.meta.hiddenSections.includes("custom") &&
+										tab !== "custom" &&
+										"opacity-40",
+								)}
+							>
+								+自定义
+							</button>
 						</nav>
 						<section className="studio-sidebar-form">
 							<h2 className="mb-3 text-[15px] font-semibold tracking-tight">
-								{TABS.find((item) => item.id === tab)?.label}
+								{tabTitle(tab)}
 							</h2>
 							{tab === "basics" ? <BasicsForm {...formProps} /> : null}
 							{tab === "skills" ? <SkillsForm {...formProps} /> : null}
@@ -307,6 +374,25 @@ export function EditorPage() {
 							{tab === "custom" ? <CustomSectionsForm {...formProps} /> : null}
 							{tab === "theme" ? <ThemeForm {...formProps} /> : null}
 						</section>
+						<div className="studio-sidebar-footer">
+							<button
+								type="button"
+								onClick={toggleTheme}
+								aria-pressed={tab === "theme"}
+								className={cn(
+									"pressable flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-[13px] transition-colors duration-100",
+									tab === "theme"
+										? "bg-neutral-900 font-medium text-white hover:bg-neutral-800"
+										: "bg-white text-neutral-700 hover:bg-neutral-50 hover:shadow-sm",
+								)}
+							>
+								<Settings2 className="size-4 opacity-70" />
+								<span className="flex-1">版式</span>
+								<span className={cn("text-xs", tab === "theme" ? "text-white/60" : "text-neutral-400")}>
+									{layoutMode === "single" ? "长图" : "A4"}
+								</span>
+							</button>
+						</div>
 					</div>
 				</aside>
 

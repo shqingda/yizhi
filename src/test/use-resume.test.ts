@@ -18,7 +18,10 @@ function mockApi(options?: {
 		}
 		if (init?.method === "PUT") {
 			if ((options?.saveStatus ?? 200) >= 400) {
-				return jsonResponse({ error: "fail" }, options?.saveStatus ?? 500);
+				return jsonResponse(
+					options?.save ?? { error: "fail" },
+					options?.saveStatus ?? 500,
+				);
 			}
 			return jsonResponse(
 				options?.save ?? {
@@ -178,11 +181,44 @@ describe("useResume", () => {
 		expect(result.current.cloudUpdatedAt).toBe("2026-09-12T16:00:00.000Z");
 	});
 
-	it("lets persistCloud return false when D1 is down", async () => {
+	it("keeps the local draft when the cloud write conflicts", async () => {
+		mockApi({
+			db: true,
+			saveStatus: 409,
+			save: {
+				error: "conflict",
+				id: "default",
+				slug: "shqingda",
+				data: SAMPLE_RESUME,
+				updatedAt: "2026-09-13T00:00:00.000Z",
+			},
+		});
+		const { result } = renderHook(() => useResume());
+		await flushHydration();
+
+		act(() => {
+			result.current.setResume((current) => ({
+				...current,
+				basics: { ...current.basics, label: "全栈工程师" },
+			}));
+		});
+
+		let persistResult = "local";
+		await act(async () => {
+			persistResult = await result.current.persistCloud();
+		});
+
+		expect(persistResult).toBe("conflict");
+		expect(result.current.cloudConflict).toBe(true);
+		expect(result.current.resume.basics.label).toBe("全栈工程师");
+		expect(result.current.cloudUpdatedAt).toBe("2026-09-12T12:00:00.000Z");
+	});
+
+	it("lets persistCloud return local when D1 is down", async () => {
 		mockApi({ db: false });
 		const { result } = renderHook(() => useResume());
 		await flushHydration();
-		await expect(result.current.persistCloud()).resolves.toBe(false);
+		await expect(result.current.persistCloud()).resolves.toBe("local");
 	});
 
 	it("normalizes imported JSON and can reset to the sample", async () => {

@@ -1,6 +1,16 @@
 import { useLayoutEffect, useRef } from "react";
-import type { Resume, SectionKey } from "@shared/schema";
+import { Cake, Globe2, Mail, MapPin, Phone, UserRound, type LucideIcon } from "lucide-react";
+import type { BasicsFieldKey, ContactFieldKey, Resume, SectionKey } from "@shared/schema";
 import { useResumeFit, type ResumeLayoutInfo } from "@/hooks/useResumeFit";
+
+const CONTACT_ICONS: Record<ContactFieldKey, LucideIcon> = {
+	email: Mail,
+	phone: Phone,
+	location: MapPin,
+	url: Globe2,
+	birthday: Cake,
+	status: UserRound,
+};
 
 const SECTION_TITLES: Record<SectionKey, string> = {
 	skills: "专业技能",
@@ -13,6 +23,13 @@ const SECTION_TITLES: Record<SectionKey, string> = {
 	custom: "",
 };
 
+function blockProps(id: string, kind: "unit" | "keep" = "unit") {
+	return {
+		"data-block-id": id,
+		"data-block-kind": kind,
+	} as const;
+}
+
 function dateRange(start?: string, end?: string) {
 	const a = start?.trim();
 	const b = end?.trim();
@@ -21,9 +38,9 @@ function dateRange(start?: string, end?: string) {
 	return a || b || "";
 }
 
-function SectionHeading({ title }: { title: string }) {
+function SectionHeading({ title, blockId }: { title: string; blockId: string }) {
 	return (
-		<div className="resume-heading">
+		<div className="resume-heading" {...blockProps(blockId, "keep")}>
 			<h2 className="resume-heading-title">{title}</h2>
 		</div>
 	);
@@ -63,17 +80,18 @@ function Bullets({ items }: { items?: string[] }) {
 }
 
 function renderSection(key: SectionKey, resume: Resume) {
+	if (resume.meta.hiddenSections.includes(key)) return null;
 	switch (key) {
 		case "skills":
 			if (!resume.skills.some((s) => s.name || s.keywords)) return null;
 			return (
 				<section key={key} className="resume-section">
-					<SectionHeading title={SECTION_TITLES.skills} />
+					<SectionHeading title={SECTION_TITLES.skills} blockId="heading-skills" />
 					<dl className="resume-skills">
 						{resume.skills
 							.filter((s) => s.name || s.keywords)
 							.map((skill) => (
-								<div key={skill.id} className="resume-skill">
+								<div key={skill.id} className="resume-skill" {...blockProps(skill.id)}>
 									<dt>{skill.name}</dt>
 									<dd>{skill.keywords}</dd>
 								</div>
@@ -85,12 +103,12 @@ function renderSection(key: SectionKey, resume: Resume) {
 			if (!resume.experience.some((e) => e.company || e.position)) return null;
 			return (
 				<section key={key} className="resume-section">
-					<SectionHeading title={SECTION_TITLES.experience} />
+					<SectionHeading title={SECTION_TITLES.experience} blockId="heading-experience" />
 					{resume.experience.map((item) => (
-						<div key={item.id} className="resume-entry">
+						<div key={item.id} className="resume-entry" {...blockProps(item.id)}>
 							<EntryHeader
 								title={item.company}
-								meta={[item.position, item.location].filter(Boolean).join(" · ")}
+								meta={item.position}
 								date={dateRange(item.startDate, item.endDate)}
 							/>
 							<Bullets items={item.highlights} />
@@ -102,20 +120,15 @@ function renderSection(key: SectionKey, resume: Resume) {
 			if (!resume.projects.some((p) => p.name)) return null;
 			return (
 				<section key={key} className="resume-section">
-					<SectionHeading title={SECTION_TITLES.projects} />
+					<SectionHeading title={SECTION_TITLES.projects} blockId="heading-projects" />
 					{resume.projects.map((item) => (
-						<div key={item.id} className="resume-entry">
+						<div key={item.id} className="resume-entry" {...blockProps(item.id)}>
 							<EntryHeader
 								title={item.name}
-								meta={item.role}
+								meta={[item.role, item.url].filter(Boolean).join(" · ")}
 								date={dateRange(item.startDate, item.endDate)}
 							/>
-							<Bullets
-								items={[
-									...(item.url ? [`${item.url}`] : []),
-									...item.highlights,
-								]}
-							/>
+							<Bullets items={item.highlights} />
 						</div>
 					))}
 				</section>
@@ -124,9 +137,9 @@ function renderSection(key: SectionKey, resume: Resume) {
 			if (!resume.education.some((e) => e.institution)) return null;
 			return (
 				<section key={key} className="resume-section">
-					<SectionHeading title={SECTION_TITLES.education} />
+					<SectionHeading title={SECTION_TITLES.education} blockId="heading-education" />
 					{resume.education.map((item) => (
-						<div key={item.id} className="resume-entry">
+						<div key={item.id} className="resume-entry" {...blockProps(item.id)}>
 							<EntryHeader
 								title={item.institution}
 								meta={[item.studyType, item.area, item.location].filter(Boolean).join(" · ")}
@@ -141,11 +154,11 @@ function renderSection(key: SectionKey, resume: Resume) {
 			if (!resume.awards.some((a) => a.title)) return null;
 			return (
 				<section key={key} className="resume-section">
-					<SectionHeading title={SECTION_TITLES.awards} />
+					<SectionHeading title={SECTION_TITLES.awards} blockId="heading-awards" />
 					{resume.awards
 						.filter((a) => a.title)
 						.map((award) => (
-							<div key={award.id} className="resume-entry">
+							<div key={award.id} className="resume-entry" {...blockProps(award.id)}>
 								<EntryHeader
 									title={award.title}
 									meta={award.awarder}
@@ -160,11 +173,11 @@ function renderSection(key: SectionKey, resume: Resume) {
 			if (!resume.publications.some((p) => p.name)) return null;
 			return (
 				<section key={key} className="resume-section">
-					<SectionHeading title={SECTION_TITLES.publications} />
+					<SectionHeading title={SECTION_TITLES.publications} blockId="heading-publications" />
 					{resume.publications
 						.filter((p) => p.name)
 						.map((pub) => (
-							<div key={pub.id} className="resume-entry">
+							<div key={pub.id} className="resume-entry" {...blockProps(pub.id)}>
 								<EntryHeader title={pub.name} date={pub.releaseDate} />
 								<p className="resume-note">
 									{[pub.summary, pub.publisher, pub.url].filter(Boolean).join("  ·  ")}
@@ -177,8 +190,8 @@ function renderSection(key: SectionKey, resume: Resume) {
 			if (!resume.languages.some((l) => l.language || l.fluency)) return null;
 			return (
 				<section key={key} className="resume-section">
-					<SectionHeading title={SECTION_TITLES.languages} />
-					<ul className="resume-languages">
+					<SectionHeading title={SECTION_TITLES.languages} blockId="heading-languages" />
+					<ul className="resume-languages" {...blockProps("languages")}>
 						{resume.languages
 							.filter((l) => l.language || l.fluency)
 							.map((lang) => (
@@ -195,9 +208,9 @@ function renderSection(key: SectionKey, resume: Resume) {
 				.filter((section) => section.title || section.items.length)
 				.map((section) => (
 					<section key={section.id} className="resume-section">
-						<SectionHeading title={section.title || "其他"} />
+						<SectionHeading title={section.title || "其他"} blockId={`heading-${section.id}`} />
 						{section.items.map((item) => (
-							<div key={item.id} className="resume-entry">
+							<div key={item.id} className="resume-entry" {...blockProps(item.id)}>
 								<EntryHeader title={item.title} meta={item.subtitle} date={item.date} />
 								<Bullets items={item.highlights} />
 							</div>
@@ -231,7 +244,11 @@ export function ResumeDocument({
 		customSections: resume.customSections,
 		fontScale: resume.meta.fontScale,
 		showPhoto: resume.meta.showPhoto,
+		headerAlign: resume.meta.headerAlign,
 		sectionOrder: resume.meta.sectionOrder,
+		hiddenSections: resume.meta.hiddenSections,
+		basicsOrder: resume.meta.basicsOrder,
+		hiddenBasics: resume.meta.hiddenBasics,
 		layoutMode,
 	});
 	const layout = useResumeFit(sheetRef, innerRef, layoutMode, revision);
@@ -241,13 +258,15 @@ export function ResumeDocument({
 		onLayout?.(layout);
 	}, [layout, onLayout]);
 
-	const contacts = [
-		resume.basics.email,
-		resume.basics.phone,
-		resume.basics.location,
-		resume.basics.url,
-	].filter((item): item is string => Boolean(item?.trim()));
-
+	const hiddenBasics = new Set(resume.meta.hiddenBasics);
+	const visibleField = (key: BasicsFieldKey, value?: string) =>
+		!hiddenBasics.has(key) && Boolean(value?.trim());
+	const contacts = resume.meta.basicsOrder.flatMap((key) => {
+		const value = resume.basics[key];
+		return visibleField(key, value) ? [{ key, value: value as string }] : [];
+	});
+	const showPhoto = resume.meta.showPhoto && Boolean(resume.basics.photo);
+	const align = resume.meta.headerAlign;
 	const scale = resume.meta.fontScale || 1;
 
 	return (
@@ -259,16 +278,41 @@ export function ResumeDocument({
 			style={{ ["--resume-font-scale" as string]: String(scale) }}
 		>
 			<div ref={innerRef} className="resume-inner">
-				<header className="resume-header">
-					{resume.meta.showPhoto && resume.basics.photo ? (
+				<header
+					className="resume-header"
+					data-align={align}
+					data-photo={showPhoto ? "on" : "off"}
+					{...blockProps("basics")}
+				>
+					{showPhoto ? (
 						<img className="resume-photo" src={resume.basics.photo} alt={resume.basics.name} />
 					) : null}
 					<div className="resume-identity">
-						<h1 className="resume-name">{resume.basics.name || "姓名"}</h1>
-						{resume.basics.label ? <p className="resume-title">{resume.basics.label}</p> : null}
+						{!hiddenBasics.has("name") ? (
+							<h1 className="resume-name">{resume.basics.name || "姓名"}</h1>
+						) : null}
+						{visibleField("label", resume.basics.label) ? (
+							<p className="resume-title">{resume.basics.label}</p>
+						) : null}
 					</div>
 					{contacts.length ? (
-						<p className="resume-contacts">{contacts.join("  ·  ")}</p>
+						<ul className="resume-contacts">
+							{contacts.map((item) => {
+								const Icon = CONTACT_ICONS[item.key];
+								return (
+									<li key={item.key}>
+										<Icon className="resume-contact-icon" aria-hidden="true" strokeWidth={1.8} />
+										{item.key === "email" ? (
+											<a className="resume-contact-text" href={`mailto:${item.value}`}>
+												{item.value}
+											</a>
+										) : (
+											<span className="resume-contact-text">{item.value}</span>
+										)}
+									</li>
+								);
+							})}
+						</ul>
 					) : null}
 					{resume.basics.summary ? <p className="resume-summary">{resume.basics.summary}</p> : null}
 				</header>

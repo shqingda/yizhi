@@ -22,8 +22,24 @@ const LEGACY_SECTION_ORDER = [
 ] as const;
 
 export type LayoutMode = "single" | "multi";
+export type HeaderAlign = "left" | "center" | "right";
 
 export type SectionKey = (typeof SECTION_KEYS)[number];
+
+export const IDENTITY_FIELD_KEYS = ["name", "label"] as const;
+export const CONTACT_FIELD_KEYS = [
+	"email",
+	"phone",
+	"location",
+	"url",
+	"birthday",
+	"status",
+] as const;
+export const BASICS_FIELD_KEYS = [...IDENTITY_FIELD_KEYS, ...CONTACT_FIELD_KEYS] as const;
+
+export type IdentityFieldKey = (typeof IDENTITY_FIELD_KEYS)[number];
+export type ContactFieldKey = (typeof CONTACT_FIELD_KEYS)[number];
+export type BasicsFieldKey = (typeof BASICS_FIELD_KEYS)[number];
 
 export interface ResumeBasics {
 	name: string;
@@ -32,6 +48,7 @@ export interface ResumeBasics {
 	phone?: string;
 	url?: string;
 	location?: string;
+	birthday?: string;
 	status?: string;
 	availableFrom?: string;
 	summary?: string;
@@ -117,7 +134,11 @@ export interface ResumeMeta {
 	fontScale: number;
 	showPhoto: boolean;
 	layoutMode: LayoutMode;
+	headerAlign: HeaderAlign;
 	sectionOrder: SectionKey[];
+	hiddenSections: SectionKey[];
+	basicsOrder: ContactFieldKey[];
+	hiddenBasics: BasicsFieldKey[];
 }
 
 export interface Resume {
@@ -138,8 +159,28 @@ export const DEFAULT_META: ResumeMeta = {
 	fontScale: 1,
 	showPhoto: false,
 	layoutMode: "multi",
+	headerAlign: "center",
 	sectionOrder: [...SECTION_KEYS],
+	hiddenSections: [],
+	basicsOrder: [...CONTACT_FIELD_KEYS],
+	hiddenBasics: ["birthday", "status"],
 };
+
+function mergeKeyedOrder<T extends string>(incoming: unknown, allowed: readonly T[]): T[] {
+	const picked = Array.isArray(incoming)
+		? incoming.filter((key): key is T => allowed.includes(key as T))
+		: [];
+	return [...picked, ...allowed.filter((key) => !picked.includes(key))];
+}
+
+function normalizeHidden<T extends string>(incoming: unknown, allowed: readonly T[]): T[] {
+	if (!Array.isArray(incoming)) return [];
+	return incoming.filter((key): key is T => allowed.includes(key as T));
+}
+
+export function toggleHidden<T extends string>(list: readonly T[], key: T): T[] {
+	return list.includes(key) ? list.filter((item) => item !== key) : [...list, key];
+}
 
 function sameSectionOrder(
 	left: readonly string[],
@@ -149,6 +190,7 @@ function sameSectionOrder(
 }
 
 const SAMPLE_PROJECT_DATES: Record<string, { startDate: string; endDate: string }> = {
+	proj_studio: { startDate: "2026/08", endDate: "2026/09" },
 	proj_cloud: { startDate: "2022/04", endDate: "2022/06" },
 	proj_music: { startDate: "2020/09", endDate: "2021/01" },
 	proj_blog: { startDate: "2020/03", endDate: "2020/06" },
@@ -173,7 +215,13 @@ export function emptyResume(): Resume {
 		publications: [],
 		languages: [],
 		customSections: [],
-		meta: { ...DEFAULT_META, sectionOrder: [...SECTION_KEYS] },
+		meta: {
+			...DEFAULT_META,
+			sectionOrder: [...SECTION_KEYS],
+			hiddenSections: [],
+			basicsOrder: [...CONTACT_FIELD_KEYS],
+			hiddenBasics: [...DEFAULT_META.hiddenBasics],
+		},
 	};
 }
 
@@ -231,6 +279,7 @@ export function normalizeResume(input: unknown): Resume {
 			phone: asString(basicsRaw.phone) || undefined,
 			url: asString(basicsRaw.url) || undefined,
 			location: asString(basicsRaw.location) || undefined,
+			birthday: asString(basicsRaw.birthday) || undefined,
 			status: asString(basicsRaw.status) || undefined,
 			availableFrom: asString(basicsRaw.availableFrom) || undefined,
 			summary: asString(basicsRaw.summary) || undefined,
@@ -269,8 +318,8 @@ export function normalizeResume(input: unknown): Resume {
 						id,
 						name: asString(row.name),
 						role: asString(row.role) || undefined,
-						startDate: asString(row.startDate) || sampled?.startDate,
-						endDate: asString(row.endDate) || sampled?.endDate,
+						startDate: typeof row.startDate === "string" ? row.startDate : sampled?.startDate,
+						endDate: typeof row.endDate === "string" ? row.endDate : sampled?.endDate,
 						url: asString(row.url) || undefined,
 						highlights: asStringArray(row.highlights),
 					};
@@ -352,7 +401,16 @@ export function normalizeResume(input: unknown): Resume {
 			fontScale: asNumber(metaRaw.fontScale, DEFAULT_META.fontScale),
 			showPhoto: asBoolean(metaRaw.showPhoto, DEFAULT_META.showPhoto),
 			layoutMode: metaRaw.layoutMode === "single" ? "single" : "multi",
+			headerAlign:
+				metaRaw.headerAlign === "left" || metaRaw.headerAlign === "right"
+					? metaRaw.headerAlign
+					: "center",
 			sectionOrder,
+			hiddenSections: normalizeHidden(metaRaw.hiddenSections, SECTION_KEYS),
+			basicsOrder: mergeKeyedOrder(metaRaw.basicsOrder, CONTACT_FIELD_KEYS),
+			hiddenBasics: Array.isArray(metaRaw.hiddenBasics)
+				? normalizeHidden(metaRaw.hiddenBasics, BASICS_FIELD_KEYS)
+				: [...DEFAULT_META.hiddenBasics],
 		},
 	};
 }

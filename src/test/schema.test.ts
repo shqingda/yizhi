@@ -5,9 +5,18 @@ import {
 	emptyResume,
 	isResumeLike,
 	normalizeResume,
+	toggleHidden,
 	uid,
 } from "@shared/schema";
 import { SAMPLE_RESUME } from "@shared/seed";
+import sampleResumeJson from "../../public/sample-resume.json?raw";
+
+describe("toggleHidden", () => {
+	it("adds and removes a key", () => {
+		expect(toggleHidden(["awards"], "projects")).toEqual(["awards", "projects"]);
+		expect(toggleHidden(["awards", "projects"], "awards")).toEqual(["projects"]);
+	});
+});
 
 describe("uid", () => {
 	it("uses the given prefix and returns unique values", () => {
@@ -51,12 +60,11 @@ describe("normalizeResume", () => {
 	});
 
 	it("keeps a valid sample intact", () => {
-		const resume = normalizeResume(SAMPLE_RESUME);
-		expect(resume.basics.name).toBe("商庆达");
-		expect(resume.basics.label).toBe("前端 / 全栈工程师");
-		expect(resume.skills).toHaveLength(SAMPLE_RESUME.skills.length);
-		expect(resume.experience[0]?.company).toBe("中国铁路设计集团信息化院");
-		expect(resume.meta.sectionOrder).toEqual([...SECTION_KEYS]);
+		const template = JSON.parse(sampleResumeJson);
+		const resume = normalizeResume(template);
+		expect(resume).toMatchObject(template);
+		expect(SAMPLE_RESUME).toEqual(resume);
+		expect(normalizeResume(resume)).toEqual(resume);
 	});
 
 	it("drops empty optional strings and non-string highlights", () => {
@@ -98,6 +106,15 @@ describe("normalizeResume", () => {
 			startDate: "2022/04",
 			endDate: "2022/06",
 		});
+	});
+
+	it("preserves explicitly cleared dates even for a known sample project id", () => {
+		const resume = normalizeResume({
+			basics: { name: "Ada", label: "Dev" },
+			projects: [{ id: "proj_cloud", name: "My project", startDate: "", endDate: "", highlights: [] }],
+		});
+		expect(resume.projects[0]).toMatchObject({ startDate: "", endDate: "" });
+		expect(normalizeResume(resume).projects[0]).toEqual(resume.projects[0]);
 	});
 
 	it("migrates the leftover blue accent and the pre-redesign section order", () => {
@@ -150,6 +167,33 @@ describe("normalizeResume", () => {
 		expect(resume.meta.layoutMode).toBe("single");
 		expect(resume.meta.fontScale).toBe(1.1);
 		expect(resume.meta.showPhoto).toBe(true);
+	});
+
+	it("normalizes header alignment, hidden sections, and contact order", () => {
+		const resume = normalizeResume({
+			basics: { name: "Ada", label: "Dev", birthday: "1996/01" },
+			meta: {
+				headerAlign: "left",
+				hiddenSections: ["awards", "nope"],
+				basicsOrder: ["phone", "email"],
+				hiddenBasics: ["label", "phone"],
+			},
+		});
+		expect(resume.basics.birthday).toBe("1996/01");
+		expect(resume.meta.headerAlign).toBe("left");
+		expect(resume.meta.hiddenSections).toEqual(["awards"]);
+		expect(resume.meta.basicsOrder[0]).toBe("phone");
+		expect(resume.meta.basicsOrder[1]).toBe("email");
+		expect(resume.meta.basicsOrder).toEqual(expect.arrayContaining([...DEFAULT_META.basicsOrder]));
+		expect(resume.meta.hiddenBasics).toEqual(["label", "phone"]);
+	});
+
+	it("falls back to a centered header when align is invalid", () => {
+		const resume = normalizeResume({
+			basics: { name: "Ada", label: "Dev" },
+			meta: { headerAlign: "justify" },
+		});
+		expect(resume.meta.headerAlign).toBe("center");
 	});
 
 	it("normalizes nested custom sections", () => {

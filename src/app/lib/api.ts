@@ -15,6 +15,11 @@ export interface ResumeResponse {
 	updatedAt: string | null;
 }
 
+export type SaveResumeResult =
+	| { status: "saved"; resume: ResumeResponse }
+	| { status: "conflict"; remote: ResumeResponse }
+	| { status: "error" };
+
 export async function fetchHealth(): Promise<HealthResponse> {
 	try {
 		const res = await fetch("/api/health");
@@ -39,16 +44,32 @@ export async function saveResume(
 	idOrSlug: string,
 	resume: Resume,
 	slug?: string,
-): Promise<ResumeResponse | null> {
+	options?: { baseUpdatedAt?: string | null; force?: boolean },
+): Promise<SaveResumeResult> {
 	try {
+		const headers: Record<string, string> = { "Content-Type": "application/json" };
+		const baseUpdatedAt = options?.force ? undefined : options?.baseUpdatedAt || undefined;
+		if (baseUpdatedAt) headers["If-Match"] = baseUpdatedAt;
+
 		const res = await fetch(`/api/resumes/${encodeURIComponent(idOrSlug)}`, {
 			method: "PUT",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ data: resume, slug }),
+			headers,
+			body: JSON.stringify({
+				data: resume,
+				slug,
+				...(baseUpdatedAt ? { baseUpdatedAt } : {}),
+			}),
 		});
-		if (!res.ok) return null;
-		return (await res.json()) as ResumeResponse;
+		const payload = (await res.json().catch(() => null)) as ResumeResponse | null;
+		if (res.status === 409) {
+			return {
+				status: "conflict",
+				remote: payload?.data ? payload : { id: "", slug: "", data: resume, updatedAt: null },
+			};
+		}
+		if (!res.ok || !payload) return { status: "error" };
+		return { status: "saved", resume: payload };
 	} catch {
-		return null;
+		return { status: "error" };
 	}
 }

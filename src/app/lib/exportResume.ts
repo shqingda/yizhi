@@ -51,6 +51,12 @@ function copyDocumentStyles(target: Document) {
 		.resume-sheet::after { display: none !important; }
 		.resume-heading { break-after: avoid; page-break-after: avoid; }
 		.resume-entry, .resume-skill { break-inside: avoid; page-break-inside: avoid; }
+		.resume-page-spacer {
+			height: 0 !important;
+			margin: 0 !important;
+			break-after: page;
+			page-break-after: always;
+		}
 	`;
 	target.head.appendChild(printStyle);
 }

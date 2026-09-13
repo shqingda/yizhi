@@ -1,8 +1,10 @@
-# Resume Studio · 简历工坊
+# 一纸简历
 
-在线简历生成器：左侧表单 + 右侧 A4 实时预览，公开分享页，打印 / PDF 导出。默认模板为经典中文技术简历（居中姓名、联系行、蓝色强调标题）。
+在线简历生成器：左侧表单 + 右侧实时预览，公开分享页，打印 / PDF 导出。默认模板为经典中文技术简历，支持左、中、右三种基本信息布局和带图标的联系信息。
 
 A Magic Resume–style editor with a shareable public page. Preview, print, and PDF share one A4 layout.
+
+项目经历文案与逐项实现说明见 [项目经历详解](docs/project-experience.md)。
 
 ## Stack
 
@@ -32,14 +34,16 @@ pnpm cf-typegen       # regenerate Worker types
 
 | 路由 | 说明 |
 | --- | --- |
-| `/` 或 `/editor` | 编辑器：基本信息、技能、工作、项目、教育、获奖、论文、语言、自定义、主题 |
+| `/` 或 `/editor` | 编辑器：栏目表单、+自定义区块、底部单独的版式设置 |
 | `/resume` | 公开页（默认 slug `shqingda`） |
 | `/r/:slug` | 指定 slug 的只读简历 |
 
-- **实时预览** 即打印版式（A4，页边距约 16mm，Noto Sans SC）
-- **导出 PDF**：浏览器打印对话框 →「另存为 PDF」。`@page` 已设为 A4
+- **实时预览** 即打印版式（A4，页边距 16mm，Noto Sans SC）
+- **A4 分页引擎**：按标题/条目测高后贪心装箱，标题与首条绑定；预览垫片对齐页缝，打印映射为 `page-break`
+- **导出 PDF**：长图走 DOM 光栅化；A4 走隔离 iframe 打印。`@page` 已设为 A4
+- **云端写入** 带 `If-Match` 版本戳，冲突返回 409 并保留本地稿
 - **JSON 导入 / 导出**、**重置为示例**
-- **主题**：强调色、字号、可选照片
+- **版式**：长图 / A4、字号、可选照片、栏目顺序
 - 公开页优先读 D1；失败时回退本机草稿或示例数据
 
 ## API
@@ -71,7 +75,7 @@ pnpm deploy
 
 1. 打开编辑器改各区块，或导入 `public/sample-resume.json` 为起点。
 2. 类型定义见 `src/shared/schema.ts`：`basics`, `skills[]`, `experience[]`, `projects[]`, `education[]`, `awards?`, `publications?`, `languages?`, `customSections?`, `meta?`。
-3. 示例数据：`src/shared/seed.ts`。
+3. 示例数据统一维护在 `public/sample-resume.json`，`src/shared/seed.ts` 直接读取该文件，供编辑器重置、公开页回退和首次 D1 写入使用。
 4. 版式：`src/app/components/resume/ResumeDocument.tsx` 与 `src/app/index.css`。
 
 ## 项目结构

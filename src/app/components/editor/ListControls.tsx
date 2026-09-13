@@ -1,6 +1,53 @@
-import type { ReactNode } from "react";
-import { ArrowDown, ArrowUp, Trash2 } from "lucide-react";
+import type { ButtonHTMLAttributes, ReactNode } from "react";
+import { ArrowDown, ArrowUp, Eye, EyeOff, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+export function IconButton({
+	label,
+	pressed,
+	className,
+	children,
+	...props
+}: ButtonHTMLAttributes<HTMLButtonElement> & {
+	label: string;
+	pressed?: boolean;
+}) {
+	return (
+		<button
+			type="button"
+			aria-label={label}
+			aria-pressed={pressed}
+			className={cn(
+				"pressable inline-flex size-8 shrink-0 items-center justify-center rounded-full text-neutral-500",
+				"hover:bg-black/5 hover:text-neutral-800",
+				pressed && "bg-black/5 text-neutral-400",
+				className,
+			)}
+			{...props}
+		>
+			{children}
+		</button>
+	);
+}
+
+export function VisibilityToggle({
+	visible,
+	onToggle,
+	labelOn = "隐藏",
+	labelOff = "显示",
+}: {
+	visible: boolean;
+	onToggle: () => void;
+	labelOn?: string;
+	labelOff?: string;
+}) {
+	return (
+		<IconButton label={visible ? labelOn : labelOff} pressed={!visible} onClick={onToggle}>
+			{visible ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
+		</IconButton>
+	);
+}
 
 export function ListControls({
 	index,

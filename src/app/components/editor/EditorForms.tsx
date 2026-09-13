@@ -1,12 +1,21 @@
-import { Plus } from "lucide-react";
-import type { Resume, SectionKey } from "@shared/schema";
-import { uid } from "@shared/schema";
+import {
+	Cake,
+	Link2,
+	Mail,
+	MapPin,
+	Phone,
+	Plus,
+	Trash2,
+	UserRound,
+} from "lucide-react";
+import type { ContactFieldKey, HeaderAlign, Resume, SectionKey } from "@shared/schema";
+import { toggleHidden, uid } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { Field, HighlightsEditor, ListControls, moveItem } from "./ListControls";
+import { Field, HighlightsEditor, IconButton, ListControls, VisibilityToggle, moveItem } from "./ListControls";
+import { SortableList } from "./SortableList";
 
 export type EditorTab = "basics" | SectionKey | "theme";
 
@@ -23,53 +32,197 @@ function patch<K extends keyof Resume>(
 	setResume((current) => ({ ...current, [key]: value }));
 }
 
+const CONTACT_FIELDS: {
+	id: ContactFieldKey;
+	label: string;
+	placeholder: string;
+	icon: typeof Mail;
+}[] = [
+	{ id: "email", label: "邮箱", placeholder: "name@email.com", icon: Mail },
+	{ id: "phone", label: "电话", placeholder: "手机号", icon: Phone },
+	{ id: "location", label: "地址", placeholder: "城市 / 地区", icon: MapPin },
+	{ id: "url", label: "站点", placeholder: "https://", icon: Link2 },
+	{ id: "birthday", label: "生日", placeholder: "1996/01", icon: Cake },
+	{ id: "status", label: "状态", placeholder: "在职 / 离职 / 求职中", icon: UserRound },
+];
+
+function patchMeta(setResume: FormProps["setResume"], partial: Partial<Resume["meta"]>) {
+	setResume((current) => ({ ...current, meta: { ...current.meta, ...partial } }));
+}
+
 export function BasicsForm({ resume, setResume }: FormProps) {
 	const basics = resume.basics;
+	const meta = resume.meta;
+	const hidden = new Set(meta.hiddenBasics);
 	const update = (partial: Partial<Resume["basics"]>) =>
 		setResume((current) => ({ ...current, basics: { ...current.basics, ...partial } }));
+	const toggleField = (key: Resume["meta"]["hiddenBasics"][number]) =>
+		patchMeta(setResume, { hiddenBasics: toggleHidden(meta.hiddenBasics, key) });
 
 	return (
-		<div className="grid gap-3">
-			<div className="grid grid-cols-2 gap-3">
-				<Field label="姓名">
-					<Input value={basics.name} onChange={(e) => update({ name: e.target.value })} />
-				</Field>
-				<Field label="职位 / 头衔">
-					<Input value={basics.label} onChange={(e) => update({ label: e.target.value })} />
-				</Field>
-				<Field label="邮箱">
-					<Input value={basics.email ?? ""} onChange={(e) => update({ email: e.target.value })} />
-				</Field>
-				<Field label="电话">
-					<Input value={basics.phone ?? ""} onChange={(e) => update({ phone: e.target.value })} />
-				</Field>
-				<Field label="城市">
-					<Input value={basics.location ?? ""} onChange={(e) => update({ location: e.target.value })} />
-				</Field>
-				<Field label="个人站点">
-					<Input value={basics.url ?? ""} onChange={(e) => update({ url: e.target.value })} />
-				</Field>
+		<div className="grid gap-5">
+			<div>
+				<p className="mb-2 text-sm font-medium text-neutral-700">布局</p>
+				<div className="grid grid-cols-3 gap-2">
+					{(
+						[
+							{ id: "left", label: "居左" },
+							{ id: "center", label: "居中" },
+							{ id: "right", label: "居右" },
+						] as const
+					).map((option) => (
+						<button
+							key={option.id}
+							type="button"
+							onClick={() => patchMeta(setResume, { headerAlign: option.id })}
+							className={cn(
+								"pressable flex flex-col items-stretch gap-1.5 rounded-xl border px-2 py-2 transition-colors duration-100",
+								meta.headerAlign === option.id
+									? "border-neutral-900 bg-neutral-900 text-white"
+									: "border-black/10 bg-white text-neutral-600 hover:bg-neutral-50",
+							)}
+						>
+							<AlignMark align={option.id} />
+							<span className="text-center text-[11px]">{option.label}</span>
+						</button>
+					))}
+				</div>
 			</div>
-			<Field label="简介（可选，显示在页头下方）">
+
+			<div>
+				<p className="mb-2 text-sm font-medium text-neutral-700">资料</p>
+				<div className="flex items-center gap-2">
+					{basics.photo ? (
+						<img
+							src={basics.photo}
+							alt=""
+							className="size-10 shrink-0 rounded-md object-contain bg-neutral-100"
+						/>
+					) : null}
+					<Input
+						type="file"
+						accept="image/*"
+						className="min-w-0 flex-1"
+						onChange={(event) => {
+							const file = event.target.files?.[0];
+							if (!file) return;
+							const reader = new FileReader();
+							reader.onload = () => update({ photo: String(reader.result) });
+							reader.readAsDataURL(file);
+						}}
+					/>
+					<VisibilityToggle
+						visible={meta.showPhoto}
+						onToggle={() => patchMeta(setResume, { showPhoto: !meta.showPhoto })}
+					/>
+				</div>
+			</div>
+
+			<div>
+				<p className="mb-2 text-sm font-medium text-neutral-700">基础字段</p>
+				<div className="grid gap-2">
+					<BasicsFieldRow
+						label="姓名"
+						value={basics.name}
+						visible={!hidden.has("name")}
+						onChange={(name) => update({ name })}
+						onToggle={() => toggleField("name")}
+					/>
+					<BasicsFieldRow
+						label="职位"
+						value={basics.label}
+						visible={!hidden.has("label")}
+						onChange={(label) => update({ label })}
+						onToggle={() => toggleField("label")}
+					/>
+				</div>
+			</div>
+
+			<div>
+				<p className="mb-2 text-sm font-medium text-neutral-700">联系信息</p>
+				<SortableList
+					items={meta.basicsOrder}
+					getId={(key) => key}
+					onReorder={(basicsOrder) => patchMeta(setResume, { basicsOrder })}
+				>
+					{(key, { handle, dragging }) => {
+						const field = CONTACT_FIELDS.find((item) => item.id === key) ?? CONTACT_FIELDS[0];
+						const Icon = field.icon;
+						const visible = !hidden.has(key);
+						return (
+							<div
+								className={cn(
+									"flex items-center gap-1.5 rounded-xl border border-black/8 bg-white px-1.5 py-1",
+									dragging && "shadow-md",
+									!visible && "opacity-45",
+								)}
+							>
+								{handle}
+								<Icon className="size-3.5 shrink-0 text-neutral-400" />
+								<span className="w-10 shrink-0 text-xs text-neutral-500">{field.label}</span>
+								<Input
+									className="h-8 min-w-0 flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0"
+									value={basics[key] ?? ""}
+									placeholder={field.placeholder}
+									onChange={(e) => update({ [key]: e.target.value })}
+								/>
+								<VisibilityToggle visible={visible} onToggle={() => toggleField(key)} />
+							</div>
+						);
+					}}
+				</SortableList>
+				<p className="mt-2 text-xs text-muted-foreground">按住左侧拖动排序，点眼睛隐藏或显示。空字段即使开启也不会印在简历上。</p>
+			</div>
+
+			<Field label="简介">
 				<Textarea
 					value={basics.summary ?? ""}
 					onChange={(e) => update({ summary: e.target.value })}
 					rows={3}
+					placeholder="可选，显示在页头下方"
 				/>
 			</Field>
-			<Field label="照片（可选，写入简历 JSON）">
-				<Input
-					type="file"
-					accept="image/*"
-					onChange={(event) => {
-						const file = event.target.files?.[0];
-						if (!file) return;
-						const reader = new FileReader();
-						reader.onload = () => update({ photo: String(reader.result) });
-						reader.readAsDataURL(file);
-					}}
-				/>
-			</Field>
+		</div>
+	);
+}
+
+function AlignMark({ align }: { align: HeaderAlign }) {
+	return (
+		<span className="flex h-7 items-center px-2">
+			<span
+				className={cn(
+					"h-1.5 w-7 rounded-full bg-current",
+					align === "left" && "mr-auto",
+					align === "center" && "mx-auto",
+					align === "right" && "ml-auto",
+				)}
+			/>
+		</span>
+	);
+}
+
+function BasicsFieldRow({
+	label,
+	value,
+	visible,
+	onChange,
+	onToggle,
+}: {
+	label: string;
+	value: string;
+	visible: boolean;
+	onChange: (value: string) => void;
+	onToggle: () => void;
+}) {
+	return (
+		<div className={cn("flex items-center gap-2 rounded-xl border border-black/8 bg-white px-3 py-1", !visible && "opacity-45")}>
+			<span className="w-10 shrink-0 text-xs text-neutral-500">{label}</span>
+			<Input
+				className="h-8 min-w-0 flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0"
+				value={value}
+				onChange={(e) => onChange(e.target.value)}
+			/>
+			<VisibilityToggle visible={visible} onToggle={onToggle} />
 		</div>
 	);
 }
@@ -330,6 +483,20 @@ export function ProjectsForm({ resume, setResume }: FormProps) {
 										"projects",
 										resume.projects.map((row) =>
 											row.id === item.id ? { ...row, endDate: e.target.value } : row,
+										),
+									)
+								}
+							/>
+						</Field>
+						<Field label="链接">
+							<Input
+								value={item.url ?? ""}
+								onChange={(e) =>
+									patch(
+										setResume,
+										"projects",
+										resume.projects.map((row) =>
+											row.id === item.id ? { ...row, url: e.target.value } : row,
 										),
 									)
 								}
@@ -758,138 +925,117 @@ export function LanguagesForm({ resume, setResume }: FormProps) {
 	);
 }
 
+function updateCustomSection(
+	setResume: FormProps["setResume"],
+	resume: Resume,
+	sectionId: string,
+	updater: (section: Resume["customSections"][number]) => Resume["customSections"][number],
+) {
+	patch(
+		setResume,
+		"customSections",
+		resume.customSections.map((row) => (row.id === sectionId ? updater(row) : row)),
+	);
+}
+
 export function CustomSectionsForm({ resume, setResume }: FormProps) {
 	return (
-		<div className="grid gap-4">
-			{resume.customSections.map((section, sectionIndex) => (
+		<div className="grid gap-3">
+			{resume.customSections.map((section) => (
 				<div key={section.id} className="rounded-xl border border-black/8 bg-white p-3">
-					<div className="mb-2 flex items-center justify-between gap-2">
-						<Field label="区块标题">
-							<Input
-								value={section.title}
-								onChange={(e) =>
-									patch(
-										setResume,
-										"customSections",
-										resume.customSections.map((row) =>
-											row.id === section.id ? { ...row, title: e.target.value } : row,
-										),
-									)
-								}
-							/>
-						</Field>
-						<ListControls
-							index={sectionIndex}
-							total={resume.customSections.length}
-							onMove={(from, to) =>
-								patch(setResume, "customSections", moveItem(resume.customSections, from, to))
+					<p className="mb-1.5 text-sm font-medium text-neutral-700">区块标题</p>
+					<div className="flex items-center gap-2">
+						<Input
+							className="min-w-0 flex-1"
+							value={section.title}
+							placeholder="自定义区块"
+							onChange={(e) =>
+								updateCustomSection(setResume, resume, section.id, (row) => ({
+									...row,
+									title: e.target.value,
+								}))
 							}
-							onRemove={() =>
+						/>
+						<IconButton
+							label="删除区块"
+							onClick={() =>
 								patch(
 									setResume,
 									"customSections",
 									resume.customSections.filter((row) => row.id !== section.id),
 								)
 							}
-						/>
+						>
+							<Trash2 className="size-4" />
+						</IconButton>
 					</div>
-					<div className="grid gap-3">
-						{section.items.map((item, itemIndex) => (
-							<div key={item.id} className="rounded-md border border-dashed p-3">
-								<div className="mb-2 flex justify-end">
-									<ListControls
-										index={itemIndex}
-										total={section.items.length}
-										onMove={(from, to) =>
-											patch(
-												setResume,
-												"customSections",
-												resume.customSections.map((row) =>
-													row.id === section.id
-														? { ...row, items: moveItem(row.items, from, to) }
-														: row,
+					<div className="mt-3 grid gap-2">
+						{section.items.map((item) => (
+							<div key={item.id} className="rounded-lg bg-neutral-50 p-2.5">
+								<div className="flex items-center gap-2">
+									<Input
+										className="min-w-0 flex-1 bg-white"
+										value={item.title}
+										placeholder="标题"
+										onChange={(e) =>
+											updateCustomSection(setResume, resume, section.id, (row) => ({
+												...row,
+												items: row.items.map((entry) =>
+													entry.id === item.id ? { ...entry, title: e.target.value } : entry,
 												),
-											)
+											}))
 										}
-										onRemove={() =>
-											patch(
-												setResume,
-												"customSections",
-												resume.customSections.map((row) =>
-													row.id === section.id
-														? { ...row, items: row.items.filter((entry) => entry.id !== item.id) }
-														: row,
+									/>
+									<IconButton
+										label="删除条目"
+										onClick={() =>
+											updateCustomSection(setResume, resume, section.id, (row) => ({
+												...row,
+												items: row.items.filter((entry) => entry.id !== item.id),
+											}))
+										}
+									>
+										<Trash2 className="size-4" />
+									</IconButton>
+								</div>
+								<div className="mt-2 grid grid-cols-2 gap-2">
+									<Input
+										className="bg-white"
+										value={item.subtitle ?? ""}
+										placeholder="副标题"
+										onChange={(e) =>
+											updateCustomSection(setResume, resume, section.id, (row) => ({
+												...row,
+												items: row.items.map((entry) =>
+													entry.id === item.id ? { ...entry, subtitle: e.target.value } : entry,
 												),
-											)
+											}))
+										}
+									/>
+									<Input
+										className="bg-white"
+										value={item.date ?? ""}
+										placeholder="时间"
+										onChange={(e) =>
+											updateCustomSection(setResume, resume, section.id, (row) => ({
+												...row,
+												items: row.items.map((entry) =>
+													entry.id === item.id ? { ...entry, date: e.target.value } : entry,
+												),
+											}))
 										}
 									/>
 								</div>
-								<div className="grid grid-cols-2 gap-3">
-									<Field label="标题">
-										<Input
-											value={item.title}
-											onChange={(e) =>
-												patch(
-													setResume,
-													"customSections",
-													resume.customSections.map((row) =>
-														row.id === section.id
-															? {
-																	...row,
-																	items: row.items.map((entry) =>
-																		entry.id === item.id
-																			? { ...entry, title: e.target.value }
-																			: entry,
-																	),
-																}
-															: row,
-													),
-												)
-											}
-										/>
-									</Field>
-									<Field label="副标题">
-										<Input
-											value={item.subtitle ?? ""}
-											onChange={(e) =>
-												patch(
-													setResume,
-													"customSections",
-													resume.customSections.map((row) =>
-														row.id === section.id
-															? {
-																	...row,
-																	items: row.items.map((entry) =>
-																		entry.id === item.id
-																			? { ...entry, subtitle: e.target.value }
-																			: entry,
-																	),
-																}
-															: row,
-													),
-												)
-											}
-										/>
-									</Field>
-								</div>
-								<div className="mt-3">
+								<div className="mt-2">
 									<HighlightsEditor
 										value={item.highlights}
 										onChange={(highlights) =>
-											patch(
-												setResume,
-												"customSections",
-												resume.customSections.map((row) =>
-													row.id === section.id
-														? {
-																...row,
-																items: row.items.map((entry) =>
-																	entry.id === item.id ? { ...entry, highlights } : entry,
-																),
-															}
-														: row,
+											updateCustomSection(setResume, resume, section.id, (row) => ({
+												...row,
+												items: row.items.map((entry) =>
+													entry.id === item.id ? { ...entry, highlights } : entry,
 												),
-											)
+											}))
 										}
 									/>
 								</div>
@@ -898,22 +1044,12 @@ export function CustomSectionsForm({ resume, setResume }: FormProps) {
 						<Button
 							type="button"
 							variant="secondary"
+							className="w-full"
 							onClick={() =>
-								patch(
-									setResume,
-									"customSections",
-									resume.customSections.map((row) =>
-										row.id === section.id
-											? {
-													...row,
-													items: [
-														...row.items,
-														{ id: uid("centry"), title: "", highlights: [""] },
-													],
-												}
-											: row,
-									),
-								)
+								updateCustomSection(setResume, resume, section.id, (row) => ({
+									...row,
+									items: [...row.items, { id: uid("centry"), title: "", highlights: [""] }],
+								}))
 							}
 						>
 							<Plus data-icon="inline-start" /> 添加条目
@@ -924,6 +1060,7 @@ export function CustomSectionsForm({ resume, setResume }: FormProps) {
 			<Button
 				type="button"
 				variant="outline"
+				className="w-full"
 				onClick={() =>
 					patch(setResume, "customSections", [
 						...resume.customSections,
@@ -993,50 +1130,43 @@ export function ThemeForm({ resume, setResume }: FormProps) {
 					max={1.15}
 					step={0.01}
 					value={meta.fontScale}
-					onChange={(e) =>
-						setResume((current) => ({
-							...current,
-							meta: { ...current.meta, fontScale: Number(e.target.value) },
-						}))
-					}
+					onChange={(e) => patchMeta(setResume, { fontScale: Number(e.target.value) })}
 				/>
 			</Field>
-			<label className="flex items-center justify-between gap-3 text-sm">
-				<span className="font-medium text-neutral-700">显示照片</span>
-				<Switch
-					checked={meta.showPhoto}
-					onCheckedChange={(checked) =>
-						setResume((current) => ({
-							...current,
-							meta: { ...current.meta, showPhoto: checked },
-						}))
-					}
-				/>
-			</label>
 			<div>
 				<p className="mb-2 text-sm font-medium text-neutral-700">栏目顺序</p>
-				<div className="grid gap-2">
-					{meta.sectionOrder.map((key, index) => (
-						<div key={key} className="flex items-center justify-between rounded-xl border border-black/8 bg-white px-3 py-1.5">
-							<span className="text-sm">{SECTION_LABELS[key] ?? key}</span>
-							<ListControls
-								index={index}
-								total={meta.sectionOrder.length}
-								onMove={(from, to) =>
-									setResume((current) => ({
-										...current,
-										meta: {
-											...current.meta,
-											sectionOrder: moveItem(current.meta.sectionOrder, from, to),
-										},
-									}))
-								}
-								onRemove={() => undefined}
-							/>
-						</div>
-					))}
-				</div>
-				<p className="mt-2 text-xs text-muted-foreground">空栏目不会出现在简历上。此处不可删除栏目，以免打乱模板。</p>
+				<SortableList
+					items={meta.sectionOrder}
+					getId={(key) => key}
+					onReorder={(sectionOrder) => patchMeta(setResume, { sectionOrder })}
+				>
+					{(key, { handle, dragging }) => {
+						const hidden = meta.hiddenSections.includes(key);
+						return (
+							<div
+								className={cn(
+									"flex items-center gap-1.5 rounded-xl border border-black/8 bg-white px-1.5 py-1",
+									dragging && "shadow-md",
+									hidden && "opacity-45",
+								)}
+							>
+								{handle}
+								<span className="min-w-0 flex-1 px-1 text-sm">{SECTION_LABELS[key] ?? key}</span>
+								<VisibilityToggle
+									visible={!hidden}
+									onToggle={() =>
+										patchMeta(setResume, {
+											hiddenSections: toggleHidden(meta.hiddenSections, key),
+										})
+									}
+								/>
+							</div>
+						);
+					}}
+				</SortableList>
+				<p className="mt-2 text-xs text-muted-foreground">
+					按住左侧拖动调整顺序，点眼睛隐藏或显示。空栏目即使开启也不会印在简历上。
+				</p>
 			</div>
 		</div>
 	);
