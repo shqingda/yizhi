@@ -21,7 +21,7 @@ pnpm install
 pnpm dev              # http://127.0.0.1:45221  (Vite + Workers runtime + local D1)
 pnpm build
 pnpm preview
-pnpm deploy           # wrangler deploy (after build)
+pnpm run deploy      # wrangler deploy (after build)
 pnpm db:generate      # drizzle-kit generate
 pnpm db:migrate       # apply SQL to local D1
 pnpm db:migrate:prod  # apply SQL to remote D1
@@ -66,7 +66,7 @@ pnpm cf-typegen       # regenerate Worker types
 pnpm wrangler d1 create resume-studio
 # 把返回的 database_id 写入 wrangler.toml
 pnpm db:migrate:prod
-pnpm deploy
+pnpm run deploy
 ```
 
 将 `wrangler.toml` 中的占位 `database_id` 换成真实 ID 后再部署。

@@ -519,7 +519,9 @@ export const resumes = sqliteTable("resumes", {
 
 数据库绑定名为 `DB`，Worker 通过 `c.env.DB` 使用 D1。`nodejs_compat` 是运行兼容配置，不代表部署了一台常驻 Node.js 服务器。
 
-常用命令是 `pnpm check` 执行类型检查、测试和构建，`pnpm deploy` 执行构建并通过 Wrangler 部署。修改模板会随新版本发布，但不等同于更新已有 D1 记录。
+常用命令是 `pnpm check` 执行类型检查、测试和构建，`pnpm run deploy` 执行构建并通过 Wrangler 部署。修改模板会随新版本发布，但不等同于更新已有 D1 记录。
+
+部署脚本要明确写成 `pnpm run deploy`；直接运行 `pnpm deploy` 会调用 pnpm 自带的部署命令，需要其他参数，不能代替本项目的 npm script。
 
 ### 3.4 本地自动保存的作用与时机
 

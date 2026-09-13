@@ -1,6 +1,6 @@
 # 一纸简历 — Cloudflare Workers + static SPA + D1
 # Local: `pnpm dev` (Vite + @cloudflare/vite-plugin emulates D1)
-# Deploy: create a D1 database, replace database_id, then `pnpm deploy`
+# Deploy: create a D1 database, replace database_id, then `pnpm run deploy`
 
 name = "resume-studio"
 main = "./src/worker/index.ts"
