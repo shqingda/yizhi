@@ -41,7 +41,7 @@ import { Input } from "@/components/ui/input";
 import { useResume } from "@/hooks/useResume";
 import type { ResumeLayoutInfo } from "@/hooks/useResumeFit";
 import { exportResumePdf } from "@/lib/exportResume";
-import { SIDEBAR_KEY, readLocalValue, downloadJson, readJsonFile } from "@/lib/storage";
+import { SIDEBAR_KEY, readLocalValue, writeLocalValue, downloadJson, readJsonFile } from "@/lib/storage";
 import { cn } from "@/lib/utils";
 
 const SECTION_TABS: { id: Exclude<EditorTab, "custom" | "theme">; label: string }[] = [
@@ -136,7 +136,7 @@ export function EditorPage() {
 	const toggleSidebar = useCallback(() => {
 		setSidebarOpen((open) => {
 			const next = !open;
-			window.localStorage.setItem(SIDEBAR_KEY, next ? "1" : "0");
+			writeLocalValue(SIDEBAR_KEY, next ? "1" : "0");
 			return next;
 		});
 	}, []);

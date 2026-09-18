@@ -6,19 +6,34 @@ export const SLUG_KEY = "yizhi:slug";
 
 export const SIDEBAR_KEY = "yizhi:sidebar";
 
-/** Copy old values on first read; retain the originals for recovery. */
-export function readLocalValue(key: string): string | null {
-	const current = localStorage.getItem(key);
-	if (current !== null) return current;
-	const legacy = localStorage.getItem(key.replace(/^yizhi:/, "resume-studio:"));
-	if (legacy !== null) {
-		try {
-			localStorage.setItem(key, legacy);
-		} catch {
-			// A full storage quota must not prevent reading an existing draft.
-		}
+const LEGACY_KEYS = {
+	[STORAGE_KEY]: "resume-studio:draft",
+	[SLUG_KEY]: "resume-studio:slug",
+	[SIDEBAR_KEY]: "resume-studio:sidebar",
+} as const;
+
+type LocalKey = keyof typeof LEGACY_KEYS;
+
+/** Read and write the same key until copying the legacy value succeeds. */
+function resolveLocalKey(key: LocalKey): string {
+	if (localStorage.getItem(key) !== null) return key;
+	const legacyKey = LEGACY_KEYS[key];
+	const legacy = localStorage.getItem(legacyKey);
+	if (legacy === null) return key;
+	try {
+		localStorage.setItem(key, legacy);
+		return key;
+	} catch {
+		return legacyKey;
 	}
-	return legacy;
+}
+
+export function readLocalValue(key: LocalKey): string | null {
+	return localStorage.getItem(resolveLocalKey(key));
+}
+
+export function writeLocalValue(key: LocalKey, value: string): void {
+	localStorage.setItem(resolveLocalKey(key), value);
 }
 
 export function loadLocalResume(): Resume {
@@ -32,7 +47,7 @@ export function loadLocalResume(): Resume {
 }
 
 export function saveLocalResume(resume: Resume) {
-	localStorage.setItem(STORAGE_KEY, JSON.stringify(resume));
+	writeLocalValue(STORAGE_KEY, JSON.stringify(resume));
 }
 
 export function loadLocalSlug(): string {
@@ -40,7 +55,7 @@ export function loadLocalSlug(): string {
 }
 
 export function saveLocalSlug(slug: string) {
-	localStorage.setItem(SLUG_KEY, slug);
+	writeLocalValue(SLUG_KEY, slug);
 }
 
 export function downloadJson(resume: Resume, filename = "resume.json") {

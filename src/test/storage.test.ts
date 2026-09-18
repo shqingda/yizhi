@@ -3,6 +3,7 @@ import { SAMPLE_RESUME } from "@shared/seed";
 import {
 	SIDEBAR_KEY,
 	readLocalValue,
+	writeLocalValue,
 	SLUG_KEY,
 	STORAGE_KEY,
 	loadLocalResume,
@@ -87,5 +88,61 @@ describe("project rename storage migration", () => {
 		} finally {
 			spy.mockRestore();
 		}
+	});
+});
+
+
+describe("saving after a quota-limited migration", () => {
+	it("saves large legacy drafts and migrates the latest edit when space becomes available", () => {
+		const draft = structuredClone(SAMPLE_RESUME);
+		draft.basics.photo = "data:image/png;base64," + "A".repeat(2_600_000);
+		localStorage.setItem("resume-studio:draft", JSON.stringify(draft));
+
+		const edited = loadLocalResume();
+		expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+		edited.basics.name = "编辑后";
+		expect(() => saveLocalResume(edited)).not.toThrow();
+		expect(loadLocalResume().basics.name).toBe("编辑后");
+		expect(loadLocalResume().basics.photo).toBe(draft.basics.photo);
+
+		// Updating the old key with a smaller draft frees space for migration.
+		delete edited.basics.photo;
+		saveLocalResume(edited);
+		expect(loadLocalResume().basics.name).toBe("编辑后");
+		expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).basics.name).toBe("编辑后");
+		edited.basics.name = "迁移后";
+		saveLocalResume(edited);
+		expect(loadLocalResume().basics.name).toBe("迁移后");
+	});
+
+	it.each([
+		[SLUG_KEY, "resume-studio:slug", "old-slug", "new-slug"],
+		[SIDEBAR_KEY, "resume-studio:sidebar", "0", "1"],
+	] as const)("keeps reads and writes consistent for %s when copying fails", (key, legacyKey, oldValue, newValue) => {
+		localStorage.setItem(legacyKey, oldValue);
+		const setItem = Storage.prototype.setItem;
+		const spy = vi.spyOn(Storage.prototype, "setItem").mockImplementation(function (this: Storage, name, value) {
+			if (name === key) throw new DOMException("Quota exceeded", "QuotaExceededError");
+			setItem.call(this, name, value);
+		});
+		try {
+			expect(readLocalValue(key)).toBe(oldValue);
+			writeLocalValue(key, newValue);
+			expect(readLocalValue(key)).toBe(newValue);
+		} finally {
+			spy.mockRestore();
+		}
+		expect(readLocalValue(key)).toBe(newValue);
+		expect(localStorage.getItem(key)).toBe(newValue);
+	});
+
+	it("reports failed writes and preserves the last saved legacy draft", () => {
+		const draft = structuredClone(SAMPLE_RESUME);
+		draft.basics.photo = "A".repeat(2_600_000);
+		localStorage.setItem("resume-studio:draft", JSON.stringify(draft));
+		const edited = loadLocalResume();
+		edited.basics.photo = "A".repeat(5_100_000);
+		expect(() => saveLocalResume(edited)).toThrow();
+		expect(loadLocalResume().basics.photo).toBe(draft.basics.photo);
 	});
 });
