@@ -4,6 +4,8 @@ import { normalizeResume, type Resume } from "@shared/schema";
 import { SAMPLE_RESUME } from "@shared/seed";
 import { fetchHealth, fetchResume, saveResume } from "@/lib/api";
 import {
+	STORAGE_KEY,
+	readLocalValue,
 	loadLocalResume,
 	loadLocalSlug,
 	saveLocalResume,
@@ -38,7 +40,7 @@ export function useResume() {
 				const remote = await fetchResume(slug);
 				if (cancelled) return;
 				if (remote?.data) {
-					const hasLocal = Boolean(localStorage.getItem("resume-studio:draft"));
+					const hasLocal = Boolean(readLocalValue(STORAGE_KEY));
 					if (!hasLocal) {
 						setResume(normalizeResume(remote.data));
 					}

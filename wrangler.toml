@@ -2,7 +2,7 @@
 # Local: `pnpm dev` (Vite + @cloudflare/vite-plugin emulates D1)
 # Deploy: create a D1 database, replace database_id, then `pnpm run deploy`
 
-name = "resume-studio"
+name = "yizhi"
 main = "./src/worker/index.ts"
 # Must be <= the local workerd binary. Bump when you upgrade wrangler/workerd.
 compatibility_date = "2026-08-18"
@@ -19,6 +19,7 @@ run_worker_first = ["/api/*"]
 
 [[d1_databases]]
 binding = "DB"
+# Keep the existing database and ID to preserve saved resumes.
 database_name = "resume-studio"
 database_id = "5fdb93eb-85f9-4453-89ae-fa7bcc0f3f42"
 migrations_dir = "drizzle"

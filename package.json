@@ -1,9 +1,9 @@
 {
-	"name": "resume-studio",
+	"name": "yizhi",
 	"description": "Universal online resume generator — Magic Resume–style editor, public page, and A4 PDF on Cloudflare Workers + D1",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/shqingda/resume-studio.git"
+		"url": "https://github.com/shqingda/yizhi.git"
 	},
 	"private": true,
 	"type": "module",

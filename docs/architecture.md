@@ -99,7 +99,7 @@ flowchart TB
 ## 3. 目录与模块：每层管什么
 
 ```text
-resume-studio/
+yizhi/
 ├── src/app/                         浏览器端
 │   ├── main.tsx                     挂载 React 应用
 │   ├── App.tsx                      页面地址与路由
@@ -239,7 +239,7 @@ sequenceDiagram
 
 这里的等待是**防抖**：连续输入会取消旧定时器，等短暂停顿再执行。两条保存流程独立安排，图中不表示云端一定等本地写入成功后才开始。
 
-本地存储键包括 `resume-studio:draft`、`resume-studio:slug` 和侧栏偏好的 `resume-studio:sidebar`。草稿目前只有一个固定键，没有按不同简历标识分别保存。
+本地存储键包括 `yizhi:draft`、`yizhi:slug` 和侧栏偏好的 `yizhi:sidebar`。首次读取新键时，若不存在则从对应的旧 `resume-studio:*` 键复制数据，并保留旧值；已有新值不会被覆盖。此迁移仅适用于相同网站来源，换域名需先导出 JSON 再导入。草稿目前只有一个固定键，没有按不同简历标识分别保存。
 
 <a id="chapter-6"></a>
 

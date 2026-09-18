@@ -44,7 +44,7 @@ app.get("/api/health", async (c) => {
 	const db = await openDb(c.env).catch(() => null);
 	return c.json({
 		ok: true,
-		service: "resume-studio",
+		service: "yizhi",
 		db: Boolean(db),
 		time: new Date().toISOString(),
 	});

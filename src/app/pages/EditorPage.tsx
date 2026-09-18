@@ -41,7 +41,7 @@ import { Input } from "@/components/ui/input";
 import { useResume } from "@/hooks/useResume";
 import type { ResumeLayoutInfo } from "@/hooks/useResumeFit";
 import { exportResumePdf } from "@/lib/exportResume";
-import { downloadJson, readJsonFile } from "@/lib/storage";
+import { SIDEBAR_KEY, readLocalValue, downloadJson, readJsonFile } from "@/lib/storage";
 import { cn } from "@/lib/utils";
 
 const SECTION_TABS: { id: Exclude<EditorTab, "custom" | "theme">; label: string }[] = [
@@ -62,7 +62,6 @@ function tabTitle(tab: EditorTab) {
 }
 
 const A4_PX = (210 * 96) / 25.4;
-const SIDEBAR_KEY = "resume-studio:sidebar";
 
 export function EditorPage() {
 	const {
@@ -85,7 +84,7 @@ export function EditorPage() {
 	const [exporting, setExporting] = useState(false);
 	const [sidebarOpen, setSidebarOpen] = useState(() => {
 		if (typeof window === "undefined") return true;
-		return window.localStorage.getItem(SIDEBAR_KEY) !== "0";
+		return readLocalValue(SIDEBAR_KEY) !== "0";
 	});
 	const stageRef = useRef<HTMLDivElement>(null);
 	const fileRef = useRef<HTMLInputElement>(null);

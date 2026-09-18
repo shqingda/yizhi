@@ -14,7 +14,7 @@ describe("worker API without D1", () => {
 		const res = await api("/api/health");
 		expect(res.status).toBe(200);
 		const body = (await res.json()) as { ok: boolean; db: boolean; service: string };
-		expect(body).toMatchObject({ ok: true, db: false, service: "resume-studio" });
+		expect(body).toMatchObject({ ok: true, db: false, service: "yizhi" });
 	});
 
 	it("lists resumes as unavailable", async () => {

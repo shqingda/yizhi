@@ -247,7 +247,7 @@ describe("useResume", () => {
 			result.current.setSlug(" ada ");
 		});
 		expect(result.current.slug).toBe("ada");
-		expect(localStorage.getItem("resume-studio:slug")).toBe("ada");
+		expect(localStorage.getItem("yizhi:slug")).toBe("ada");
 
 		act(() => {
 			result.current.setSlug("   ");

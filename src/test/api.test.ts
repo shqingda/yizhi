@@ -12,12 +12,12 @@ describe("fetchHealth", () => {
 	it("returns the API payload when healthy", async () => {
 		vi.stubGlobal(
 			"fetch",
-			vi.fn().mockResolvedValue(jsonResponse({ ok: true, db: true, service: "resume-studio" })),
+			vi.fn().mockResolvedValue(jsonResponse({ ok: true, db: true, service: "yizhi" })),
 		);
 		await expect(fetchHealth()).resolves.toEqual({
 			ok: true,
 			db: true,
-			service: "resume-studio",
+			service: "yizhi",
 		});
 		expect(fetch).toHaveBeenCalledWith("/api/health");
 	});

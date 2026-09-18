@@ -101,7 +101,7 @@ pnpm db:migrate:prod
 ### 部署到一个新的 Cloudflare 项目
 
 1. 用 `pnpm exec wrangler login` 登录目标账号。
-2. 用 `pnpm exec wrangler d1 create resume-studio` 创建目标数据库，或选择已有数据库。
+2. 新项目可用 `pnpm exec wrangler d1 create yizhi` 创建数据库；本项目改名后继续使用已有的 `resume-studio` 数据库及原 `database_id`，保留已保存的简历。
 3. 将返回的数据库 ID 写入 `wrangler.toml` 的 D1 配置，保持绑定名 `DB` 与代码一致；按需要修改 Worker 名称。
 4. 使用 `pnpm db:migrate:prod` 应用数据库迁移。
 5. 使用 `pnpm run deploy` 发布。
