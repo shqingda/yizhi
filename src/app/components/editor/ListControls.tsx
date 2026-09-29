@@ -22,9 +22,9 @@ export function IconButton({
 			aria-label={label}
 			aria-pressed={pressed}
 			className={cn(
-				"pressable inline-flex size-8 shrink-0 items-center justify-center rounded-full text-neutral-500",
-				"hover:bg-black/5 hover:text-neutral-800",
-				pressed && "bg-black/5 text-neutral-400",
+				"pressable inline-flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground",
+				"hover:bg-secondary hover:text-foreground",
+				pressed && "bg-secondary text-muted-foreground",
 				className,
 			)}
 			{...props}
@@ -96,7 +96,7 @@ export function moveItem<T>(list: T[], from: number, to: number): T[] {
 
 export function Field({ label, children }: { label: string; children: ReactNode }) {
 	const id = useId();
-	return <div className="flex min-w-0 flex-col gap-1.5 text-sm"><label htmlFor={id} className="font-medium text-neutral-700">{label}</label>{isValidElement(children) ? cloneElement(children as ReactElement<{ id?: string }>, { id }) : children}</div>;
+	return <div className="flex min-w-0 flex-col gap-1.5 text-sm"><label htmlFor={id} className="font-medium text-foreground">{label}</label>{isValidElement(children) ? cloneElement(children as ReactElement<{ id?: string }>, { id }) : children}</div>;
 }
 
 export function HighlightsEditor({
@@ -123,9 +123,9 @@ export function EntryCard({ title, onCopy, children }: { title: string; onCopy: 
 	useEffect(() => {
 		if (!title) { ref.current?.scrollIntoView?.({ block: "nearest" }); ref.current?.querySelector<HTMLInputElement>("input")?.focus(); }
 	}, []);
-	return <details ref={ref} open className="editor-entry min-w-0 rounded-xl border border-black/8 bg-white p-3">
+	return <details ref={ref} open className="editor-entry min-w-0 rounded-xl border border-black/8 bg-card p-3">
 		<summary className="mb-3 cursor-pointer text-sm font-medium leading-6 [overflow-wrap:anywhere]">{title || "新增条目"}</summary>
-		<button type="button" onClick={onCopy} className="float-left mb-2 rounded px-2 py-1 text-xs text-neutral-600 hover:bg-neutral-100">复制此条目</button>
+		<button type="button" onClick={onCopy} className="float-left mb-2 rounded px-2 py-1 text-xs text-muted-foreground hover:bg-secondary">复制此条目</button>
 		{children}
 	</details>;
 }

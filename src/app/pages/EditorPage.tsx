@@ -1,3 +1,4 @@
+import { ThemeMenu } from "@/components/ThemeMenu";
 import { useNavigate } from "react-router-dom";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -121,6 +122,7 @@ export function EditorPage() {
 						{([{ id: "single", label: "长页" }, { id: "multi", label: "A4" }] as const).map(item => <button key={item.id} aria-pressed={mode === item.id} onClick={() => setResume(c => ({ ...c, meta: { ...c.meta, layoutMode: item.id } }))}>{item.label}</button>)}
 					</div>
 					<div className="editor-toolbar-actions">
+						<ThemeMenu />
 						<div className="editor-history-actions">
 							<Button size="icon" variant="ghost" aria-label="撤销修改" title="撤销修改" disabled={!model.canUndo} onClick={model.undo}><Undo2 /></Button>
 							<Button size="icon" variant="ghost" aria-label="重做修改" title="重做修改" disabled={!model.canRedo} onClick={model.redo}><Redo2 /></Button>
@@ -130,8 +132,8 @@ export function EditorPage() {
 						<DropdownMenu>
 							<DropdownMenuTrigger render={<Button size="icon" variant="ghost" aria-label="更多操作" className="relative rounded-full" />}><Ellipsis />{model.localError && <span className="absolute right-1 top-1 size-1.5 rounded-full bg-amber-600" />}</DropdownMenuTrigger>
 							<DropdownMenuContent align="end" className="editor-more-menu w-64">
-								<div className="px-1.5 pb-1 text-xs text-neutral-500" role="status">{localLabel}</div>
-								{model.localError && <p role="alert" className="px-1.5 text-xs text-red-700">{model.localError}</p>}
+								<div className="px-1.5 pb-1 text-xs text-muted-foreground" role="status">{localLabel}</div>
+								{model.localError && <p role="alert" className="px-1.5 text-xs text-red-700 dark:text-red-300">{model.localError}</p>}
 								<DropdownMenuSeparator />
 								{model.localError && <DropdownMenuItem onClick={() => model.flushLocal()}><Save />重试本机保存</DropdownMenuItem>}
 								<DropdownMenuItem onClick={() => downloadJson(resume, `${cleanFilename(pdfFilename(resume)).replace(/\.pdf$/, "")}.json`)}><Download />导出 JSON</DropdownMenuItem>
@@ -150,14 +152,14 @@ export function EditorPage() {
 				<aside className="studio-sidebar no-print" data-open={sidebarOpen && !preview} aria-hidden={!sidebarOpen || preview} inert={!sidebarOpen || preview}>
 					<div className="studio-sidebar-inner">
 						<nav className="studio-sidebar-nav" aria-label="简历栏目">
-							{TABS.map(item => <button key={item.id} aria-current={tab === item.id ? "page" : undefined} onClick={() => item.id === "custom" ? newSection() : selectTab(item.id)} className={cn("pressable inline-flex items-center gap-0.5 whitespace-nowrap rounded-full px-2.5 py-1 text-[13px] transition-colors duration-100", tab === item.id ? "bg-neutral-900 font-medium text-white" : "text-neutral-500 hover:bg-white hover:text-neutral-800", item.id === "custom" && "border border-dashed", item.id === "custom" && (tab === "custom" ? "border-neutral-900" : "border-neutral-300 hover:border-neutral-400"), item.id !== "basics" && item.id !== "theme" && resume.meta.hiddenSections.includes(item.id) && tab !== item.id && "opacity-40")}>{item.id === "custom" && <Plus className="size-3" />}{item.label}</button>)}
+							{TABS.map(item => <button key={item.id} aria-current={tab === item.id ? "page" : undefined} onClick={() => item.id === "custom" ? newSection() : selectTab(item.id)} className={cn("pressable inline-flex items-center gap-0.5 whitespace-nowrap rounded-full px-2.5 py-1 text-[13px] transition-colors duration-100", tab === item.id ? "bg-primary font-medium text-primary-foreground" : "text-muted-foreground hover:bg-card hover:text-foreground", item.id === "custom" && "border border-dashed", item.id === "custom" && (tab === "custom" ? "border-primary" : "border-border hover:border-ring"), item.id !== "basics" && item.id !== "theme" && resume.meta.hiddenSections.includes(item.id) && tab !== item.id && "opacity-40")}>{item.id === "custom" && <Plus className="size-3" />}{item.label}</button>)}
 						</nav>
 						<section ref={formRef} className="studio-sidebar-form">
 							<h2 className="mb-3 text-[15px] font-semibold">{tab === "theme" ? "版式" : TABS.find(t => t.id === tab)?.label}</h2>
-							{tab !== "basics" && tab !== "theme" && resume.meta.hiddenSections.includes(tab) && <p className="mb-3 text-sm text-amber-800">此栏目已隐藏，不会导出。<button className="ml-1 underline" onClick={() => setResume(c => ({ ...c, meta: { ...c.meta, hiddenSections: c.meta.hiddenSections.filter(k => k !== tab) } }))}>恢复显示</button></p>}
+							{tab !== "basics" && tab !== "theme" && resume.meta.hiddenSections.includes(tab) && <p className="mb-3 text-sm text-amber-800 dark:text-amber-300">此栏目已隐藏，不会导出。<button className="ml-1 underline" onClick={() => setResume(c => ({ ...c, meta: { ...c.meta, hiddenSections: c.meta.hiddenSections.filter(k => k !== tab) } }))}>恢复显示</button></p>}
 							{tab === "basics" && <BasicsForm {...props} />}{tab === "education" && <EducationForm {...props} />}{tab === "experience" && <ExperienceForm {...props} />}{tab === "projects" && <ProjectsForm {...props} />}{tab === "skills" && <SkillsForm {...props} />}{tab === "awards" && <AwardsForm {...props} />}{tab === "publications" && <PublicationsForm {...props} />}{tab === "languages" && <LanguagesForm {...props} />}{tab === "custom" && <CustomSectionsForm {...props} />}{tab === "theme" && <ThemeForm {...props} />}
 						</section>
-						<div className="studio-sidebar-footer"><button type="button" aria-pressed={tab === "theme"} onClick={() => selectTab(tab === "theme" ? lastContentTab.current : "theme")} className={cn("pressable flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-[13px] transition-colors", tab === "theme" ? "bg-neutral-900 font-medium text-white hover:bg-neutral-800" : "bg-white text-neutral-700 hover:bg-neutral-50 hover:shadow-sm")}><Settings2 className="size-4 opacity-70" /><span className="flex-1">版式</span><span className={cn("text-xs", tab === "theme" ? "text-white/60" : "text-neutral-400")}>{mode === "single" ? "长页" : "A4"}</span></button></div>
+						<div className="studio-sidebar-footer"><button type="button" aria-pressed={tab === "theme"} onClick={() => selectTab(tab === "theme" ? lastContentTab.current : "theme")} className={cn("pressable flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-[13px] transition-colors", tab === "theme" ? "bg-primary font-medium text-primary-foreground hover:bg-primary/90" : "bg-card text-foreground hover:bg-muted hover:shadow-sm")}><Settings2 className="size-4 opacity-70" /><span className="flex-1">版式</span><span className={cn("text-xs", tab === "theme" ? "text-primary-foreground/60" : "text-muted-foreground")}>{mode === "single" ? "长页" : "A4"}</span></button></div>
 					</div>
 				</aside>
 				<section ref={stageRef} className="preview-stage" aria-label="当前简历预览">
@@ -189,18 +191,18 @@ export function EditorPage() {
 			{panel === "export" && <>
 				<label className="grid gap-2">文件名<Input value={filename} onChange={e => setFilename(e.target.value)} /></label>
 				<label className="grid gap-2">导出格式<select className="editor-select" value={mode} onChange={e => setResume(c => ({ ...c, meta: { ...c.meta, layoutMode: e.target.value as "multi" | "single" } }))}><option value="multi">A4 PDF（文字内容）</option><option value="single">长页 PDF（图片内容）</option></select></label>
-				{warning.length > 0 && <ul className="list-disc pl-5 text-amber-800">{warning.map(w => <li key={w}>{w}</li>)}</ul>}
-				{mode === "multi" && printHelp && <div className="rounded-lg bg-neutral-100 p-3 text-sm leading-6">在打印窗口选择“另存为 PDF”，纸张选 A4，缩放为 100%，关闭页眉和页脚。请检查预览后保存。<label className="mt-2 flex items-center gap-2"><input type="checkbox" onChange={e => { try { localStorage.setItem("yizhi:print-help", e.target.checked ? "off" : "on"); } catch { /* Optional preference. */ } }} /> 下次不再提示</label></div>}
-				{mode === "single" && <p className="text-neutral-600">此格式生成 PDF，文字以图片呈现，不是 PNG/JPG。投递简历建议使用 A4 PDF。</p>}
+				{warning.length > 0 && <ul className="list-disc pl-5 text-amber-800 dark:text-amber-300">{warning.map(w => <li key={w}>{w}</li>)}</ul>}
+				{mode === "multi" && printHelp && <div className="rounded-lg bg-secondary p-3 text-sm leading-6">在打印窗口选择“另存为 PDF”，纸张选 A4，缩放为 100%，关闭页眉和页脚。请检查预览后保存。<label className="mt-2 flex items-center gap-2"><input type="checkbox" onChange={e => { try { localStorage.setItem("yizhi:print-help", e.target.checked ? "off" : "on"); } catch { /* Optional preference. */ } }} /> 下次不再提示</label></div>}
+				{mode === "single" && <p className="text-muted-foreground">此格式生成 PDF，文字以图片呈现，不是 PNG/JPG。投递简历建议使用 A4 PDF。</p>}
 				<Button disabled={exporting} onClick={() => { void exportPdf().then(() => { try { setPrintHelp(localStorage.getItem("yizhi:print-help") !== "off"); } catch { /* Optional preference. */ } }); }}>{exporting ? "正在准备…" : mode === "multi" ? "打开打印窗口" : "下载长页 PDF"}</Button>
 			</>}
 			{panel === "reset" && <Button onClick={() => { if (model.resetSample()) setPanel(null); }}>确认恢复示例</Button>}
-			{panel === "recovery" && <>{!model.backups.length && <p>还没有恢复点。导入或重置前会自动创建。</p>}{model.backups.map(b => <div key={b.id} className="border-b pb-3"><p>{b.label} · {b.data.basics.name || "未填写姓名"}</p><p className="my-2 text-xs text-neutral-500">{stamp(b.time)}</p><div className="flex gap-2"><Button size="sm" onClick={() => { if (model.restore(b.id)) { setPanel(null); toast.success("已恢复，可继续撤销"); } }}>恢复</Button><Button size="sm" variant="outline" onClick={() => downloadJson(b.data, `恢复点-${b.time.slice(0, 10)}.json`)}>下载</Button><Button size="sm" variant="ghost" onClick={() => model.removeBackup(b.id)}>删除恢复点</Button></div></div>)}</>}
+			{panel === "recovery" && <>{!model.backups.length && <p>还没有恢复点。导入或重置前会自动创建。</p>}{model.backups.map(b => <div key={b.id} className="border-b pb-3"><p>{b.label} · {b.data.basics.name || "未填写姓名"}</p><p className="my-2 text-xs text-muted-foreground">{stamp(b.time)}</p><div className="flex gap-2"><Button size="sm" onClick={() => { if (model.restore(b.id)) { setPanel(null); toast.success("已恢复，可继续撤销"); } }}>恢复</Button><Button size="sm" variant="outline" onClick={() => downloadJson(b.data, `恢复点-${b.time.slice(0, 10)}.json`)}>下载</Button><Button size="sm" variant="ghost" onClick={() => model.removeBackup(b.id)}>删除恢复点</Button></div></div>)}</>}
 			{panel === "manage" && <>
 				<label className="grid gap-2">当前简历名称<Input value={rename} onChange={e => setRename(e.target.value)} maxLength={80} /></label><Button variant="outline" onClick={() => { model.rename(rename); if (model.flushLocal()) toast.success("已更新名称"); }}>保存名称</Button>
 				<div className="grid gap-2">{model.drafts.map(d => <Button key={d.id} variant={d.id === model.activeId ? "secondary" : "outline"} onClick={() => { if (model.switchDraft(d.id)) setRename(d.name); }}>{d.name}{d.id === model.activeId ? "（当前）" : ""}</Button>)}</div>
 				<div className="flex flex-wrap gap-2"><Button onClick={() => { if (model.newDraft("blank")) setPanel(null); }}>新建空白简历</Button><Button variant="outline" onClick={() => { if (model.newDraft("copy")) setPanel(null); }}>复制当前简历</Button></div>
-<p className="text-xs text-neutral-500">数据仅保存在当前浏览器；清除浏览器数据后会恢复样例。请导出 JSON 备份。</p>
+<p className="text-xs text-muted-foreground">数据仅保存在当前浏览器；清除浏览器数据后会恢复样例。请导出 JSON 备份。</p>
 			</>}
 			<Button variant="ghost" disabled={exporting} onClick={() => setPanel(null)}>取消 / 返回编辑</Button>
 		</DialogContent></Dialog>

@@ -94,9 +94,9 @@ export function SortableList<T>({
 										onReorder(moveItem(items, index, to)); setAnnouncement(`已移动到第 ${to + 1} 项`);
 									}}
 									className={cn(
-										"pressable inline-flex size-8 shrink-0 cursor-grab items-center justify-center rounded-full text-neutral-400",
-										"hover:bg-black/5 hover:text-neutral-700",
-										dragging && "cursor-grabbing text-neutral-800",
+										"pressable inline-flex size-8 shrink-0 cursor-grab items-center justify-center rounded-full text-muted-foreground",
+										"hover:bg-black/5 hover:text-foreground",
+										dragging && "cursor-grabbing text-foreground",
 									)}
 									onPointerDown={(event) => {
 										event.preventDefault();

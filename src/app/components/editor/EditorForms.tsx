@@ -66,7 +66,7 @@ export function BasicsForm({ resume, setResume }: FormProps) {
 	return (
 		<div className="grid gap-5">
 			<div>
-				<p className="mb-2 text-sm font-medium text-neutral-700">布局</p>
+				<p className="mb-2 text-sm font-medium text-foreground">布局</p>
 				<div className="grid grid-cols-3 gap-2">
 					{(
 						[
@@ -83,8 +83,8 @@ export function BasicsForm({ resume, setResume }: FormProps) {
 							className={cn(
 								"pressable flex flex-col items-stretch gap-1.5 rounded-xl border px-2 py-2 transition-colors duration-100",
 								meta.headerAlign === option.id
-									? "border-neutral-900 bg-neutral-900 text-white"
-									: "border-black/10 bg-white text-neutral-600 hover:bg-neutral-50",
+									? "border-primary bg-primary text-primary-foreground"
+									: "border-border bg-card text-muted-foreground hover:bg-muted",
 							)}
 						>
 							<AlignMark align={option.id} />
@@ -95,12 +95,12 @@ export function BasicsForm({ resume, setResume }: FormProps) {
 			</div>
 
 			<div>
-				<p className="mb-2 text-sm font-medium text-neutral-700">照片</p>
+				<p className="mb-2 text-sm font-medium text-foreground">照片</p>
 				<PhotoEditor photo={basics.photo} visible={meta.showPhoto} onVisibilityChange={showPhoto => patchMeta(setResume, { showPhoto })} onChange={photo => setResume(current => ({ ...current, basics: { ...current.basics, photo }, meta: { ...current.meta, showPhoto: !!photo } }))} />
 			</div>
 
 			<div>
-				<p className="mb-2 text-sm font-medium text-neutral-700">基础字段</p>
+				<p className="mb-2 text-sm font-medium text-foreground">基础字段</p>
 				<div className="grid gap-2">
 					<BasicsFieldRow
 						label="姓名"
@@ -120,7 +120,7 @@ export function BasicsForm({ resume, setResume }: FormProps) {
 			</div>
 
 			<div>
-				<p className="mb-2 text-sm font-medium text-neutral-700">联系信息</p>
+				<p className="mb-2 text-sm font-medium text-foreground">联系信息</p>
 				<SortableList
 					items={meta.basicsOrder}
 					getId={(key) => key}
@@ -133,16 +133,16 @@ export function BasicsForm({ resume, setResume }: FormProps) {
 						return (
 							<div
 								className={cn(
-									"flex items-center gap-1.5 rounded-xl border border-black/8 bg-white px-1.5 py-1",
+									"flex items-center gap-1.5 rounded-xl border border-black/8 bg-card px-1.5 py-1",
 									dragging && "shadow-md",
 									!visible && "opacity-45",
 								)}
 							>
 								{handle}
-								<Icon className="size-3.5 shrink-0 text-neutral-400" />
-								<span className="w-10 shrink-0 text-xs text-neutral-500">{field.label}</span>
+								<Icon className="size-3.5 shrink-0 text-muted-foreground" />
+								<span className="w-10 shrink-0 text-xs text-muted-foreground">{field.label}</span>
 								<Input
-									className="h-8 min-w-0 flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0"
+									className="h-8 min-w-0 flex-1 border-0 bg-transparent dark:bg-transparent shadow-none focus-visible:ring-0"
 									value={basics[key] ?? ""}
 									aria-label={field.label}
 									onBlur={e => { const value = e.target.value.trim(); setContactHint(key === "email" && value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? "邮箱格式可能不完整，请检查。" : key === "url" && value && !/^https?:\/\//i.test(value) ? "站点建议填写完整的 https:// 地址。" : ""); }}
@@ -155,7 +155,7 @@ export function BasicsForm({ resume, setResume }: FormProps) {
 						);
 					}}
 				</SortableList>
-				<p role="status" className="text-xs text-amber-800">{contactHint}</p>
+				<p role="status" className="text-xs text-amber-800 dark:text-amber-300">{contactHint}</p>
 				<p className="mt-2 text-xs text-muted-foreground">按住左侧拖动排序，点眼睛隐藏或显示。空字段即使开启也不会印在简历上。</p>
 			</div>
 
@@ -200,10 +200,10 @@ function BasicsFieldRow({
 	onToggle: () => void;
 }) {
 	return (
-		<div className={cn("flex items-center gap-2 rounded-xl border border-black/8 bg-white px-3 py-1", !visible && "opacity-45")}>
-			<span className="w-10 shrink-0 text-xs text-neutral-500">{label}</span>
+		<div className={cn("flex items-center gap-2 rounded-xl border border-black/8 bg-card px-3 py-1", !visible && "opacity-45")}>
+			<span className="w-10 shrink-0 text-xs text-muted-foreground">{label}</span>
 			<Input
-				className="h-8 min-w-0 flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0"
+				className="h-8 min-w-0 flex-1 border-0 bg-transparent dark:bg-transparent shadow-none focus-visible:ring-0"
 				aria-label={label}
 				value={value}
 				onChange={(e) => onChange(e.target.value)}
@@ -216,7 +216,7 @@ function BasicsFieldRow({
 export function SkillsForm({ resume, setResume }: FormProps) {
 	return (
 		<div className="grid gap-3">
-			{!resume.skills.length && <p className="text-sm leading-6 text-neutral-500">按领域组织技能，例如编程语言、设计工具或专业能力。</p>}
+			{!resume.skills.length && <p className="text-sm leading-6 text-muted-foreground">按领域组织技能，例如编程语言、设计工具或专业能力。</p>}
 			{resume.skills.map((skill, index) => (
 				<EntryCard key={skill.id} title={skill.name} onCopy={() => patch(setResume, "skills", [...resume.skills.slice(0, index + 1), { ...structuredClone(skill), id: uid("copy") }, ...resume.skills.slice(index + 1)])}>
 					<div className="mb-2 flex justify-end">
@@ -284,7 +284,7 @@ export function SkillsForm({ resume, setResume }: FormProps) {
 export function ExperienceForm({ resume, setResume }: FormProps) {
 	return (
 		<div className="grid gap-3">
-			{!resume.experience.length && <p className="text-sm leading-6 text-neutral-500">先添加最近一份工作或实习。每条要点写清行动、方法和结果。</p>}
+			{!resume.experience.length && <p className="text-sm leading-6 text-muted-foreground">先添加最近一份工作或实习。每条要点写清行动、方法和结果。</p>}
 			{resume.experience.map((item, index) => (
 				<EntryCard key={item.id} title={[item.company, item.position, item.startDate, item.endDate].filter(Boolean).join(" · ")} onCopy={() => patch(setResume, "experience", [...resume.experience.slice(0, index + 1), { ...structuredClone(item), id: uid("copy") }, ...resume.experience.slice(index + 1)])}>
 					<div className="mb-2 flex justify-end">
@@ -403,7 +403,7 @@ export function ExperienceForm({ resume, setResume }: FormProps) {
 export function ProjectsForm({ resume, setResume }: FormProps) {
 	return (
 		<div className="grid gap-3">
-			{!resume.projects.length && <p className="text-sm leading-6 text-neutral-500">选择与目标职位相关的项目，说明你的职责和贡献。</p>}
+			{!resume.projects.length && <p className="text-sm leading-6 text-muted-foreground">选择与目标职位相关的项目，说明你的职责和贡献。</p>}
 			{resume.projects.map((item, index) => (
 				<EntryCard key={item.id} title={item.name} onCopy={() => patch(setResume, "projects", [...resume.projects.slice(0, index + 1), { ...structuredClone(item), id: uid("copy") }, ...resume.projects.slice(index + 1)])}>
 					<div className="mb-2 flex justify-end">
@@ -525,7 +525,7 @@ export function ProjectsForm({ resume, setResume }: FormProps) {
 export function EducationForm({ resume, setResume }: FormProps) {
 	return (
 		<div className="grid gap-3">
-			{!resume.education.length && <p className="text-sm leading-6 text-neutral-500">从最近一段教育经历开始，可以补充相关课程或成绩。</p>}
+			{!resume.education.length && <p className="text-sm leading-6 text-muted-foreground">从最近一段教育经历开始，可以补充相关课程或成绩。</p>}
 			{resume.education.map((item, index) => (
 				<EntryCard key={item.id} title={[item.institution, item.area, item.startDate, item.endDate].filter(Boolean).join(" · ")} onCopy={() => patch(setResume, "education", [...resume.education.slice(0, index + 1), { ...structuredClone(item), id: uid("copy") }, ...resume.education.slice(index + 1)])}>
 					<div className="mb-2 flex justify-end">
@@ -673,7 +673,7 @@ export function EducationForm({ resume, setResume }: FormProps) {
 export function AwardsForm({ resume, setResume }: FormProps) {
 	return (
 		<div className="grid gap-3">
-			{!resume.awards.length && <p className="text-sm leading-6 text-neutral-500">添加与目标职位相关的奖项，注明颁发机构和年份。</p>}
+			{!resume.awards.length && <p className="text-sm leading-6 text-muted-foreground">添加与目标职位相关的奖项，注明颁发机构和年份。</p>}
 			{resume.awards.map((item, index) => (
 				<EntryCard key={item.id} title={item.title} onCopy={() => patch(setResume, "awards", [...resume.awards.slice(0, index + 1), { ...structuredClone(item), id: uid("copy") }, ...resume.awards.slice(index + 1)])}>
 					<div className="mb-2 flex justify-end">
@@ -755,7 +755,7 @@ export function AwardsForm({ resume, setResume }: FormProps) {
 export function PublicationsForm({ resume, setResume }: FormProps) {
 	return (
 		<div className="grid gap-3">
-			{!resume.publications.length && <p className="text-sm leading-6 text-neutral-500">填写论文或作品名称，可补充发表平台与链接。</p>}
+			{!resume.publications.length && <p className="text-sm leading-6 text-muted-foreground">填写论文或作品名称，可补充发表平台与链接。</p>}
 			{resume.publications.map((item, index) => (
 				<EntryCard key={item.id} title={item.name} onCopy={() => patch(setResume, "publications", [...resume.publications.slice(0, index + 1), { ...structuredClone(item), id: uid("copy") }, ...resume.publications.slice(index + 1)])}>
 					<div className="mb-2 flex justify-end">
@@ -855,7 +855,7 @@ export function PublicationsForm({ resume, setResume }: FormProps) {
 export function LanguagesForm({ resume, setResume }: FormProps) {
 	return (
 		<div className="grid gap-3">
-			{!resume.languages.length && <p className="text-sm leading-6 text-neutral-500">写明语言及熟练程度，例如英语、工作交流或考试成绩。</p>}
+			{!resume.languages.length && <p className="text-sm leading-6 text-muted-foreground">写明语言及熟练程度，例如英语、工作交流或考试成绩。</p>}
 			{resume.languages.map((item, index) => (
 				<EntryCard key={item.id} title={item.language} onCopy={() => patch(setResume, "languages", [...resume.languages.slice(0, index + 1), { ...structuredClone(item), id: uid("copy") }, ...resume.languages.slice(index + 1)])}>
 					<Field label="语言">
@@ -935,8 +935,8 @@ export function CustomSectionsForm({ resume, setResume }: FormProps) {
 	return (
 		<div className="grid gap-3">
 			{resume.customSections.map((section) => (
-				<div key={section.id} className="rounded-xl border border-black/8 bg-white p-3">
-					<p className="mb-1.5 text-sm font-medium text-neutral-700">区块标题</p>
+				<div key={section.id} className="rounded-xl border border-black/8 bg-card p-3">
+					<p className="mb-1.5 text-sm font-medium text-foreground">区块标题</p>
 					<div className="flex items-center gap-2">
 						<Input
 							className="min-w-0 flex-1"
@@ -964,10 +964,10 @@ export function CustomSectionsForm({ resume, setResume }: FormProps) {
 					</div>
 					<div className="mt-3 grid gap-2">
 						{section.items.map((item) => (
-							<div key={item.id} className="rounded-lg bg-neutral-50 p-2.5">
+							<div key={item.id} className="rounded-lg bg-muted p-2.5">
 								<div className="flex items-center gap-2">
 									<Input
-										className="min-w-0 flex-1 bg-white"
+										className="min-w-0 flex-1 bg-card"
 										value={item.title}
 										aria-label="自定义条目标题" placeholder="标题"
 										onChange={(e) =>
@@ -993,7 +993,7 @@ export function CustomSectionsForm({ resume, setResume }: FormProps) {
 								</div>
 								<div className="editor-field-grid mt-2 grid grid-cols-2 gap-2">
 									<Input
-										className="bg-white"
+										className="bg-card"
 										value={item.subtitle ?? ""}
 										aria-label="自定义条目副标题" placeholder="副标题"
 										onChange={(e) =>
@@ -1006,7 +1006,7 @@ export function CustomSectionsForm({ resume, setResume }: FormProps) {
 										}
 									/>
 									<Input
-										className="bg-white"
+										className="bg-card"
 										value={item.date ?? ""}
 										aria-label="自定义条目时间" placeholder="时间"
 										onChange={(e) =>
@@ -1084,7 +1084,7 @@ export function ThemeForm({ resume, setResume }: FormProps) {
 	return (
 		<div className="grid gap-5">
 			<div>
-				<p className="mb-2 text-sm font-medium text-neutral-700">纸张排版</p>
+				<p className="mb-2 text-sm font-medium text-foreground">纸张排版</p>
 				<div className="grid grid-cols-2 gap-2">
 					{(
 						[
@@ -1105,12 +1105,12 @@ export function ThemeForm({ resume, setResume }: FormProps) {
 							className={cn(
 								"pressable rounded-xl border px-3 py-3 text-left transition-colors duration-100",
 								layoutMode === option.id
-									? "border-neutral-900 bg-neutral-900 text-white"
-									: "border-black/10 bg-white text-neutral-700 hover:bg-neutral-50",
+									? "border-primary bg-primary text-primary-foreground"
+									: "border-border bg-card text-foreground hover:bg-muted",
 							)}
 						>
 							<p className="text-sm font-medium">{option.title}</p>
-							<p className={cn("mt-1 text-xs leading-relaxed", layoutMode === option.id ? "text-white/70" : "text-neutral-500")}>
+							<p className={cn("mt-1 text-xs leading-relaxed", layoutMode === option.id ? "text-primary-foreground/70" : "text-muted-foreground")}>
 								{option.hint}
 							</p>
 						</button>
@@ -1128,7 +1128,7 @@ export function ThemeForm({ resume, setResume }: FormProps) {
 				/>
 			</Field>
 			<div>
-				<p className="mb-2 text-sm font-medium text-neutral-700">栏目顺序</p>
+				<p className="mb-2 text-sm font-medium text-foreground">栏目顺序</p>
 				<SortableList
 					items={meta.sectionOrder}
 					getId={(key) => key}
@@ -1139,7 +1139,7 @@ export function ThemeForm({ resume, setResume }: FormProps) {
 						return (
 							<div
 								className={cn(
-									"flex items-center gap-1.5 rounded-xl border border-black/8 bg-white px-1.5 py-1",
+									"flex items-center gap-1.5 rounded-xl border border-black/8 bg-card px-1.5 py-1",
 									dragging && "shadow-md",
 									hidden && "opacity-45",
 								)}

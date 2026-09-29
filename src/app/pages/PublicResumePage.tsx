@@ -1,3 +1,4 @@
+import { ThemeMenu } from "@/components/ThemeMenu";
 import { useCallback, useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -47,10 +48,11 @@ export function PublicResumePage() {
 		catch { toast.error("导出失败，请重试"); }
 		finally { setExporting(false); }
 	};
-	return <div className="public-stage min-h-screen bg-[#e5e5ea] pb-16">
+	return <div className="public-stage min-h-screen bg-[var(--stage)] pb-16">
 		<header className="no-print mx-auto flex max-w-[210mm] items-center justify-between gap-2 px-3 py-4">
 			<Button variant="ghost" size="sm" className="max-sm:min-h-10" aria-label="返回编辑" title="返回编辑" nativeButton={false} render={<Link to="/" />}><ArrowLeft /><span className="hidden sm:inline">返回编辑</span></Button>
 			<div className="flex items-center gap-1">
+				<ThemeMenu />
 				<Button variant="ghost" size="sm" onClick={() => setZoom(null)}>适应屏幕</Button>
 				<Button variant="ghost" size="sm" aria-label="放大" title="放大" onClick={() => setZoom(Math.min(2, scale + .2))}><ZoomIn /><span className="hidden sm:inline">放大</span></Button>
 				<Button variant="ghost" size="sm" aria-label="缩小" title="缩小" onClick={() => setZoom(Math.max(.2, scale - .2))}><ZoomOut /><span className="hidden sm:inline">缩小</span></Button>
