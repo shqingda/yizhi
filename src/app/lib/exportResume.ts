@@ -1,5 +1,3 @@
-import { jsPDF } from "jspdf";
-import { domToPng } from "modern-screenshot";
 
 const A4_WIDTH_MM = 210;
 
@@ -10,17 +8,30 @@ function resumeRoot(): HTMLElement {
 }
 
 async function waitForImages(root: ParentNode) {
-	const images = [...root.querySelectorAll("img")];
-	await Promise.all(
-		images.map((img) =>
-			img.complete
-				? Promise.resolve()
-				: new Promise<void>((resolve) => {
-						img.addEventListener("load", () => resolve(), { once: true });
-						img.addEventListener("error", () => resolve(), { once: true });
-					}),
-		),
-	);
+	await Promise.all([...root.querySelectorAll("img")].map(img => {
+		if (img.complete) return img.naturalWidth ? Promise.resolve() : Promise.reject(new Error("照片未能加载，请重新上传照片后再导出"));
+		return new Promise<void>((resolve, reject) => {
+			const cleanup = () => { clearTimeout(timer); img.removeEventListener("load", loaded); img.removeEventListener("error", failed); };
+			const loaded = () => { cleanup(); resolve(); };
+			const failed = () => { cleanup(); reject(new Error("照片未能加载，请重新上传照片后再导出")); };
+			const timer = setTimeout(failed, 10000);
+			img.addEventListener("load", loaded, { once: true }); img.addEventListener("error", failed, { once: true });
+		});
+	}));
+}
+
+export async function waitForPrintStyles(doc: Document) {
+	await Promise.all([...doc.querySelectorAll<HTMLLinkElement>("link[rel=stylesheet]")].map(link => {
+		if (link.sheet) return Promise.resolve();
+		return new Promise<void>((resolve, reject) => {
+			const cleanup = () => { clearTimeout(timer); link.removeEventListener("load", loaded); link.removeEventListener("error", failed); };
+			const loaded = () => { cleanup(); resolve(); };
+			const failed = () => { cleanup(); reject(new Error("打印样式未能加载，请重试")); };
+			const timer = setTimeout(failed, 10000);
+			link.addEventListener("load", loaded, { once: true });
+			link.addEventListener("error", failed, { once: true });
+		});
+	}));
 }
 
 function copyDocumentStyles(target: Document) {
@@ -51,6 +62,7 @@ function copyDocumentStyles(target: Document) {
 		.resume-sheet::after { display: none !important; }
 		.resume-heading { break-after: avoid; page-break-after: avoid; }
 		.resume-entry, .resume-skill { break-inside: avoid; page-break-inside: avoid; }
+		.resume-entry[data-oversized] { break-inside:auto; page-break-inside:auto; }
 		.resume-page-spacer {
 			height: 0 !important;
 			margin: 0 !important;
@@ -62,6 +74,7 @@ function copyDocumentStyles(target: Document) {
 }
 
 async function snapshotSheet(sheet: HTMLElement) {
+	const { domToPng } = await import("modern-screenshot");
 	const host = document.createElement("div");
 	Object.assign(host.style, {
 		position: "fixed",
@@ -94,24 +107,26 @@ async function snapshotSheet(sheet: HTMLElement) {
 }
 
 /** 长图分享：整份简历渲成一张图，PDF 高度随内容变化。 */
+export async function createSharePdf(dataUrl: string, width: number, height: number) {
+	const { jsPDF } = await import("jspdf");
+	const heightMm = Math.max(80, height / width * A4_WIDTH_MM);
+	if (heightMm > 5000) throw new Error("内容过长，请改用 A4 PDF 分页导出");
+	const pdf = new jsPDF({
+		orientation: heightMm < A4_WIDTH_MM ? "landscape" : "portrait",
+		unit: "mm", format: [A4_WIDTH_MM, heightMm], compress: true,
+	});
+	pdf.addImage(dataUrl, "PNG", 0, 0, A4_WIDTH_MM, height / width * A4_WIDTH_MM, undefined, "FAST");
+	return pdf;
+}
 export async function exportShareImagePdf(filename: string) {
 	const dataUrl = await snapshotSheet(resumeRoot());
-	const img = new Image();
-	img.src = dataUrl;
-	await img.decode();
-	const heightMm = Math.max(80, (img.height / img.width) * A4_WIDTH_MM);
-	const pdf = new jsPDF({
-		orientation: "portrait",
-		unit: "mm",
-		format: [A4_WIDTH_MM, heightMm],
-		compress: true,
-	});
-	pdf.addImage(dataUrl, "PNG", 0, 0, A4_WIDTH_MM, heightMm, undefined, "FAST");
+	const img = new Image(); img.src = dataUrl; await img.decode();
+	const pdf = await createSharePdf(dataUrl, img.width, img.height);
 	pdf.save(filename);
 }
 
 /** A4 投递：隔离文档打印，不含编辑器阴影和缩放层。 */
-export async function exportPrintablePdf() {
+export async function exportPrintablePdf(filename = "简历.pdf") {
 	const source = resumeRoot();
 	await document.fonts?.ready;
 	await waitForImages(source);
@@ -139,6 +154,7 @@ export async function exportPrintablePdf() {
 	frameDocument.open();
 	frameDocument.write("<!doctype html><html><head><meta charset='utf-8'></head><body></body></html>");
 	frameDocument.close();
+	frameDocument.title = filename.replace(/\.pdf$/i, "");
 	copyDocumentStyles(frameDocument);
 
 	const clone = source.cloneNode(true) as HTMLElement;
@@ -151,15 +167,16 @@ export async function exportPrintablePdf() {
 	frameDocument.body.style.background = "#fff";
 	frameDocument.body.appendChild(clone);
 
-	await frameDocument.fonts?.ready;
-	await waitForImages(clone);
-	await new Promise((resolve) => window.setTimeout(resolve, 80));
-
-	const cleanup = () => iframe.remove();
-	frameWindow.addEventListener("afterprint", cleanup, { once: true });
-	window.setTimeout(cleanup, 60_000);
-	frameWindow.focus();
-	frameWindow.print();
+	try {
+		await waitForPrintStyles(frameDocument);
+		await frameDocument.fonts?.ready;
+		await waitForImages(clone);
+		await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+		const cleanup = () => iframe.remove();
+		frameWindow.addEventListener("afterprint", cleanup, { once: true });
+		window.setTimeout(cleanup, 60_000);
+		frameWindow.focus(); frameWindow.print();
+	} catch (error) { iframe.remove(); throw error; }
 }
 
 export async function exportResumePdf(mode: "single" | "multi", filename: string) {
@@ -167,5 +184,5 @@ export async function exportResumePdf(mode: "single" | "multi", filename: string
 		await exportShareImagePdf(filename);
 		return;
 	}
-	await exportPrintablePdf();
+	await exportPrintablePdf(filename);
 }

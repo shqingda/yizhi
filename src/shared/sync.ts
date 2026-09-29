@@ -1,11 +1,6 @@
-/** True when the client is saving from a stale cloud snapshot. */
-export function isStaleWrite(
-	existingUpdatedAt: string | null | undefined,
-	baseUpdatedAt: string | null | undefined,
-): boolean {
-	if (!existingUpdatedAt || !baseUpdatedAt) return false;
-	const existing = existingUpdatedAt.trim();
-	const base = baseUpdatedAt.trim().replace(/"/g, "");
-	if (!existing || !base || base === "*") return false;
-	return existing !== base;
+/** An existing record requires a matching base version. Force is an explicit API operation. */
+export function isStaleWrite(existingUpdatedAt: string | null | undefined, baseUpdatedAt: string | null | undefined): boolean {
+	if (!existingUpdatedAt) return false;
+	if (!baseUpdatedAt?.trim()) return true;
+	return existingUpdatedAt.trim() !== baseUpdatedAt.trim().replace(/^"(.*)"$/, "$1");
 }

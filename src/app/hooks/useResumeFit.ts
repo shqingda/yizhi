@@ -7,6 +7,7 @@ const SPACER_CLASS = "resume-page-spacer";
 
 export interface ResumeLayoutInfo {
 	pageCount: number;
+	overflow?: boolean;
 	height: number;
 }
 
@@ -101,7 +102,7 @@ export function useResumeFit(
 		};
 
 		const run = () => {
-			if (cancelled || !sheet.isConnected) return;
+			if (cancelled || !sheet.isConnected || sheet.clientWidth === 0) return;
 
 			if (mode === "single") {
 				clearSpacers(inner);
@@ -132,11 +133,14 @@ export function useResumeFit(
 				}
 			}
 
+			for (const node of inner.querySelectorAll<HTMLElement>("[data-block-id]")) node.toggleAttribute("data-oversized", node.offsetHeight > box);
 			applySpacers(inner, result.breaks);
-			setInfo({ pageCount: result.pageCount, height: result.pageCount * pageHeight() });
+			setInfo({ pageCount: result.pageCount, height: Math.max(result.pageCount * pageHeight(), sheet.scrollHeight), overflow: measureBlocks(inner).some(block => block.height > box) });
 		};
 
 		run();
+		inner.addEventListener("load", run, true);
+		inner.addEventListener("error", run, true);
 
 		const observer = new ResizeObserver((entries) => {
 			const width = entries[0]?.contentRect.width ?? 0;
@@ -152,6 +156,8 @@ export function useResumeFit(
 		return () => {
 			cancelled = true;
 			observer.disconnect();
+			inner.removeEventListener("load", run, true);
+			inner.removeEventListener("error", run, true);
 		};
 	}, [innerRef, mode, revision, sheetRef]);
 

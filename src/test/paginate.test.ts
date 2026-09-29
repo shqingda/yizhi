@@ -51,10 +51,15 @@ describe("paginateBlocks", () => {
 		expect(result.lastPageUsed).toBe(70);
 	});
 
-	it("lets an oversized block occupy a page and continues after it", () => {
+	it("accounts for oversized blocks across pages and uses the remaining space", () => {
 		const result = paginateBlocks([unit("huge", 140), unit("tail", 20)], 100);
 		expect(result.pageCount).toBe(2);
-		expect(result.breaks).toEqual([{ afterId: "huge", height: 0 }]);
-		expect(result.lastPageUsed).toBe(20);
+		expect(result.breaks).toEqual([]);
+		expect(result.lastPageUsed).toBe(60);
 	});
+});
+
+it("counts every page in a final oversized block and keeps its heading attached", () => {
+	const result = paginateBlocks([keep("h", 10), unit("huge", 340)], 100);
+	expect(result.pageCount).toBe(4); expect(result.breaks).toEqual([]); expect(result.lastPageUsed).toBe(50);
 });

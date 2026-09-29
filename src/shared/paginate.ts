@@ -48,7 +48,7 @@ export function paginateBlocks(
 	for (let i = 0; i < blocks.length; i += 1) {
 		const block = blocks[i];
 		const needed = peekHeight(blocks, i);
-		if (used > 0 && used + needed > pageHeight + EPS) {
+		if (used > 0 && used + needed > pageHeight + EPS && blocks[i - 1]?.kind !== "keep") {
 			breaks.push({
 				afterId: blocks[i - 1].id,
 				height: Math.max(0, pageHeight - used),
@@ -59,10 +59,12 @@ export function paginateBlocks(
 
 		used += block.height;
 
-		if (used > pageHeight + EPS && used === block.height && i < blocks.length - 1) {
-			breaks.push({ afterId: block.id, height: 0 });
-			pageCount += 1;
-			used = 0;
+		if (used > pageHeight + EPS) {
+			// A very tall entry can span several pages; keep its remaining space
+			// available to the next entry instead of inventing an extra break.
+			const extraPages = Math.floor((used - EPS) / pageHeight);
+			pageCount += extraPages;
+			used -= extraPages * pageHeight;
 		}
 	}
 

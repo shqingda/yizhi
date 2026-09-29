@@ -146,3 +146,22 @@ describe("saving after a quota-limited migration", () => {
 		expect(loadLocalResume().basics.photo).toBe(draft.basics.photo);
 	});
 });
+
+import { blankResume, createDraft, restoreRemoved, saveWorkspace, withBackup } from "@/lib/draftStore";
+describe("workspace recovery", () => {
+	it("keeps only five recovery points and preserves originals on quota failure", () => {
+		const draft = createDraft(blankResume()); let workspace = { version: 2 as const, started: true, activeId: draft.id, drafts: [draft] };
+		for (let i = 0; i < 7; i++) workspace = withBackup(workspace, draft.id, `point ${i}`);
+		expect(workspace.drafts[0].backups.map(b => b.label)).toEqual(["point 6", "point 5", "point 4", "point 3", "point 2"]);
+		saveWorkspace(workspace); const before = localStorage.getItem("yizhi:workspace:v2");
+		workspace.drafts[0].backups[0].data.basics.photo = "x".repeat(1_100_000);
+		expect(() => saveWorkspace(workspace)).toThrow(); expect(localStorage.getItem("yizhi:workspace:v2")).toBe(before);
+	});
+	it("undoes deletion without discarding subsequent text changes or new records", () => {
+		const before = blankResume(); before.skills = [{ id: "a", name: "A", keywords: "" }, { id: "b", name: "B", keywords: "" }];
+		const after = { ...before, skills: [before.skills[1]] };
+		const current = { ...after, basics: { ...after.basics, name: "New name" }, skills: [{ ...before.skills[1], keywords: "Edited" }, { id: "c", name: "New", keywords: "" }] };
+		const restored = restoreRemoved(before, after, current);
+		expect(restored.basics.name).toBe("New name"); expect(restored.skills.map(s => s.id)).toEqual(["a", "b", "c"]); expect(restored.skills[1].keywords).toBe("Edited");
+	});
+});

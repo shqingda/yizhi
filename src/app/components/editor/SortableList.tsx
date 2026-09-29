@@ -17,6 +17,7 @@ export function SortableList<T>({
 		ctx: { handle: ReactNode; index: number; dragging: boolean },
 	) => ReactNode;
 }) {
+	const [announcement, setAnnouncement] = useState("");
 	const [dragId, setDragId] = useState<string | null>(null);
 	const itemsRef = useRef(items);
 	const getIdRef = useRef(getId);
@@ -30,6 +31,8 @@ export function SortableList<T>({
 		if (!dragId) return;
 
 		const move = (event: PointerEvent) => {
+			const scroll = rowRefs.current.get(dragId)?.closest<HTMLElement>(".studio-sidebar-form");
+			if (scroll) { const bounds = scroll.getBoundingClientRect(); if (event.clientY < bounds.top + 40) scroll.scrollTop -= 12; if (event.clientY > bounds.bottom - 40) scroll.scrollTop += 12; }
 			const list = itemsRef.current;
 			const from = list.findIndex((item) => getIdRef.current(item) === dragId);
 			if (from < 0) return;
@@ -62,6 +65,7 @@ export function SortableList<T>({
 
 	return (
 		<div className="grid gap-2" data-dragging={dragId ? "true" : "false"}>
+			<span className="sr-only" role="status">{announcement}</span>
 			{items.map((item, index) => {
 				const id = getId(item);
 				const dragging = dragId === id;
@@ -79,7 +83,16 @@ export function SortableList<T>({
 							handle: (
 								<button
 									type="button"
-									aria-label="拖动排序"
+									aria-label={`排序第 ${index + 1} 项，按上下方向键移动`}
+									style={{ touchAction: "none" }}
+									onKeyDown={event => {
+										if (event.key === "Escape") { setDragId(null); return; }
+										if (!["ArrowUp", "ArrowDown"].includes(event.key)) return;
+										event.preventDefault();
+										const to = index + (event.key === "ArrowUp" ? -1 : 1);
+										if (to < 0 || to >= items.length) return;
+										onReorder(moveItem(items, index, to)); setAnnouncement(`已移动到第 ${to + 1} 项`);
+									}}
 									className={cn(
 										"pressable inline-flex size-8 shrink-0 cursor-grab items-center justify-center rounded-full text-neutral-400",
 										"hover:bg-black/5 hover:text-neutral-700",

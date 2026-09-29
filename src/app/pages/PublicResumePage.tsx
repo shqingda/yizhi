@@ -1,120 +1,59 @@
-import { useCallback, useState, useEffect } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useCallback, useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { LoaderCircle, Share } from "lucide-react";
-import { DEFAULT_SLUG, normalizeResume, type Resume } from "@shared/schema";
-import { SAMPLE_RESUME } from "@shared/seed";
+import { LoaderCircle, Download, ArrowLeft } from "lucide-react";
+import { type Resume } from "@shared/schema";
 import { ResumeDocument } from "@/components/resume/ResumeDocument";
 import { Button } from "@/components/ui/button";
 import type { ResumeLayoutInfo } from "@/hooks/useResumeFit";
-import { fetchResume } from "@/lib/api";
+import { loadWorkspace } from "@/lib/draftStore";
 import { exportResumePdf } from "@/lib/exportResume";
-import { loadLocalResume } from "@/lib/storage";
+import { cleanFilename, pdfFilename } from "@/lib/draftStore";
 
+const A4_PX = 210 * 96 / 25.4;
 export function PublicResumePage() {
-	const { slug = DEFAULT_SLUG } = useParams();
 	const [resume, setResume] = useState<Resume | null>(null);
-	const [source, setSource] = useState<"d1" | "local" | "sample">("sample");
-	const [error, setError] = useState<string | null>(null);
+	const [error, setError] = useState(false);
 	const [loading, setLoading] = useState(true);
-	const [layoutInfo, setLayoutInfo] = useState<ResumeLayoutInfo>({ pageCount: 1, height: 0 });
+	const [attempt, setAttempt] = useState(0);
+	const [layout, setLayout] = useState<ResumeLayoutInfo>({ pageCount: 1, height: 1123 });
 	const [exporting, setExporting] = useState(false);
-	const handleLayout = useCallback((info: ResumeLayoutInfo) => {
-		setLayoutInfo(info);
-	}, []);
+	const [fit, setFit] = useState(1);
+	const [zoom, setZoom] = useState<number | null>(null);
+	const container = useRef<HTMLDivElement>(null);
+	const handleLayout = useCallback((info: ResumeLayoutInfo) => setLayout(info), []);
+	useEffect(() => {
+		try { const workspace = loadWorkspace(); setResume(workspace.drafts.find(d => d.id === workspace.activeId)!.data); setError(false); }
+		catch { setError(true); }
+		setLoading(false);
+	}, [attempt]);
 
 	useEffect(() => {
-		let cancelled = false;
-		(async () => {
-			setLoading(true);
-			setError(null);
-			const remote = await fetchResume(slug);
-			if (cancelled) return;
-			if (remote?.data) {
-				setResume(normalizeResume(remote.data));
-				setSource(remote.fallback ? "sample" : "d1");
-				setLoading(false);
-				return;
-			}
-			if (slug === DEFAULT_SLUG || slug === "default") {
-				try {
-					setResume(loadLocalResume());
-					setSource("local");
-				} catch {
-					setResume(structuredClone(SAMPLE_RESUME));
-					setSource("sample");
-				}
-				setLoading(false);
-				return;
-			}
-			setResume(null);
-			setError("没有找到这份简历。请先在编辑器保存，或打开默认公开页。");
-			setLoading(false);
-		})();
-		return () => {
-			cancelled = true;
-		};
-	}, [slug]);
-
-	if (loading) {
-		return (
-			<div className="flex min-h-screen items-center justify-center text-neutral-500">
-				<LoaderCircle className="mr-2 size-5 animate-spin" />
-				正在加载简历…
-			</div>
-		);
-	}
-
-	if (error || !resume) {
-		return (
-			<div className="mx-auto flex min-h-screen max-w-lg flex-col items-center justify-center gap-4 px-6 text-center">
-				<h1 className="text-xl font-semibold">简历不存在</h1>
-				<p className="text-sm text-muted-foreground">{error}</p>
-				<Button render={<Link to="/editor" />}>回到编辑器</Button>
-			</div>
-		);
-	}
-
-	const layoutMode = resume.meta.layoutMode === "single" ? "single" : "multi";
-
-	const handleExport = async () => {
+		const node = container.current; if (!node) return;
+		const update = () => setFit(Math.min(1, Math.max(.1, (node.clientWidth - 24) / A4_PX)));
+		update(); const observer = new ResizeObserver(update); observer.observe(node); return () => observer.disconnect();
+	}, [loading, resume]);
+	if (loading) return <div role="status" className="flex min-h-screen items-center justify-center text-neutral-500"><LoaderCircle className="mr-2 size-5 animate-spin" />正在加载简历…</div>;
+	if (error || !resume) return <div className="mx-auto flex min-h-screen max-w-lg flex-col items-center justify-center gap-4 px-6 text-center">
+		<h1 className="text-xl font-semibold">暂时无法读取本机简历</h1>
+		<p className="text-sm text-muted-foreground">请重试，或返回编辑器检查本机保存状态。</p>
+		<div className="flex gap-2"><Button onClick={() => setAttempt(n => n + 1)}>重新加载</Button><Button variant="outline" nativeButton={false} render={<Link to="/" />}>返回编辑</Button></div>
+	</div>;
+	const scale = zoom ?? fit;
+	const mode = resume.meta.layoutMode;
+	const exportPdf = async () => {
 		setExporting(true);
-		try {
-			await exportResumePdf(layoutMode, `resume-${slug}.pdf`);
-			toast.success(layoutMode === "single" ? "已导出长图 PDF" : "已打开打印对话框");
-		} catch {
-			toast.error("导出失败，请重试");
-		} finally {
-			setExporting(false);
-		}
+		try { await exportResumePdf(mode, cleanFilename(pdfFilename(resume))); }
+		catch { toast.error("导出失败，请重试"); }
+		finally { setExporting(false); }
 	};
-
-	return (
-		<div className="public-stage min-h-screen bg-[#e5e5ea] pb-16">
-			<div className="no-print mx-auto flex max-w-[210mm] items-center justify-between px-4 py-5">
-				<div>
-					<p className="text-[15px] font-semibold tracking-tight">{resume.basics.name} 的简历</p>
-					<p className="mt-1 text-xs text-muted-foreground">
-						{source === "d1" ? "云端" : source === "local" ? "本机草稿" : "示例"}
-						{" · "}
-						{layoutMode === "single" ? "长图分享" : `A4 · ${layoutInfo.pageCount} 页`}
-					</p>
-				</div>
-				<div className="flex gap-2">
-					<Button size="sm" variant="outline" render={<Link to="/editor" />}>
-						编辑
-					</Button>
-					<Button size="sm" disabled={exporting} onClick={() => void handleExport()}>
-						<Share data-icon="inline-start" />
-						{exporting ? "导出中" : layoutMode === "single" ? "导出长图" : "导出 A4"}
-					</Button>
-				</div>
-			</div>
-			<div className="flex justify-center px-3">
-				<div className="resume-frame">
-					<ResumeDocument resume={resume} onLayout={handleLayout} />
-				</div>
-			</div>
-		</div>
-	);
+	return <div className="public-stage min-h-screen bg-[#e5e5ea] pb-16">
+		<header className="no-print mx-auto flex max-w-[210mm] flex-wrap items-center justify-between gap-3 px-4 py-5">
+			{<Button variant="ghost" size="sm" nativeButton={false} render={<Link to="/" />}><ArrowLeft />返回编辑</Button>}
+			<div><p className="text-[15px] font-semibold">{resume.meta.hiddenBasics.includes("name") ? "个人简历" : `${resume.basics.name || "个人"}的简历`}</p><p className="mt-1 text-xs text-neutral-600">{mode === "single" ? "长页 PDF（图片内容）" : `A4 PDF · ${layout.pageCount} 页`}</p></div>
+			<Button size="sm" disabled={exporting} onClick={() => void exportPdf()}><Download />{exporting ? "准备中…" : mode === "single" ? "导出长页 PDF" : "导出 A4 PDF"}</Button>
+		</header>
+		<div className="no-print mb-4 flex justify-center gap-2"><Button variant="ghost" size="sm" onClick={() => setZoom(null)}>适应屏幕</Button><Button variant="ghost" size="sm" onClick={() => setZoom(Math.min(2, scale + .2))}>放大</Button><Button variant="ghost" size="sm" onClick={() => setZoom(Math.max(.2, scale - .2))}>缩小</Button></div>
+		<div ref={container} className="flex overflow-auto px-3 pb-3"><div className="preview-paper mx-auto" style={{ width: A4_PX * scale, height: layout.height * scale }}><div className="preview-scale" style={{ width: A4_PX, transform: `scale(${scale})` }}><div className="resume-frame"><ResumeDocument resume={resume} onLayout={handleLayout} /></div></div></div></div>
+	</div>;
 }

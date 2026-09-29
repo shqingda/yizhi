@@ -6,8 +6,3 @@ allowBuilds:
   workerd: true
   sharp: true
   core-js: true
-
-# rollup@4.63.2 landed today and fails pnpm's default 24h minimumReleaseAge.
-# Pin the last mature release until 4.63.2 is old enough to install.
-overrides:
-  rollup: 4.63.1

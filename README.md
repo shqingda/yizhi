@@ -1,6 +1,6 @@
 # 一纸简历（yizhi）
 
-独立开发的在线简历工具：填写和调整内容，即时预览排版，保存本地草稿或云端记录，通过链接分享，并导出 A4 或长图 PDF。
+独立开发的在线简历工具：填写和调整内容，即时预览排版，自动保存浏览器本机草稿，支持 JSON 备份，并导出 A4 或长图 PDF。
 
 ## 文档入口
 
@@ -9,8 +9,9 @@
 | 你想做什么 | 阅读文档 | 内容范围 |
 | --- | --- | --- |
 | 使用工具、启动项目、部署或修改模板 | [使用与开发指南](docs/guide.md) | 操作步骤、常用命令、Cloudflare 配置和常见问题。 |
-| 理解项目怎么运转、到代码里找实现 | [技术架构](docs/architecture.md) | 整体结构、数据流、模块职责、分页导出、保存冲突与当前限制。 |
+| 理解项目怎么运转、到代码里找实现 | [技术架构](docs/architecture.md) | 整体结构、数据流、模块职责、分页导出、本机保存与当前限制。 |
 | 准备面试、解释项目和技术名词 | [面试准备](docs/project-experience.md) | 简历文案、开场介绍、逐项详解、追问回答和练习顺序。 |
+| 规划下一阶段的体验改进 | [用户体验改进计划](docs/ux-plan.md) | 分阶段范围、实施依赖与验收标准（草案）。 |
 
 **准备面试：** 先练 [开场介绍](docs/project-experience.md#chapter-2)，再看 [整体架构](docs/architecture.md#chapter-2)，最后按问题阅读面试详解。
 
@@ -23,7 +24,7 @@ pnpm install
 pnpm dev
 ```
 
-打开 [本地编辑器](http://127.0.0.1:45221)。项目通过 Vite 和 Cloudflare 插件运行前端与本地 Worker；数据库不可用时，可使用本地草稿和内置示例。
+打开 [本地编辑器](http://127.0.0.1:45221)。项目通过 Vite 和 Cloudflare 插件运行前端与本地 Worker；当前版本只使用浏览器存储，不需要配置登录或数据库。
 
 技术栈：React、TypeScript、Vite、Tailwind CSS、Base UI、Hono、Drizzle ORM、Cloudflare Workers、D1。各技术负责什么，见 [技术架构](docs/architecture.md#chapter-2)。
 

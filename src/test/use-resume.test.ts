@@ -1,257 +1,64 @@
-import { act, renderHook } from "@testing-library/react";
+import { act, cleanup, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { SAMPLE_RESUME } from "@shared/seed";
 import { useResume } from "@/hooks/useResume";
+import { loadWorkspace, WORKSPACE_KEY } from "@/lib/draftStore";
 import { STORAGE_KEY } from "@/lib/storage";
-import { jsonResponse } from "./helpers/http";
-
-function mockApi(options?: {
-	db?: boolean;
-	remote?: unknown;
-	save?: unknown;
-	saveStatus?: number;
-}) {
-	const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-		const url = String(input);
-		if (url === "/api/health") {
-			return jsonResponse({ ok: true, db: options?.db ?? false });
-		}
-		if (init?.method === "PUT") {
-			if ((options?.saveStatus ?? 200) >= 400) {
-				return jsonResponse(
-					options?.save ?? { error: "fail" },
-					options?.saveStatus ?? 500,
-				);
-			}
-			return jsonResponse(
-				options?.save ?? {
-					id: "default",
-					slug: "shqingda",
-					data: SAMPLE_RESUME,
-					updatedAt: "2026-09-12T16:00:00.000Z",
-				},
-			);
-		}
-		if (url.startsWith("/api/resumes/")) {
-			if (options?.remote === null) {
-				return jsonResponse({ error: "missing" }, 404);
-			}
-			return jsonResponse(
-				options?.remote ?? {
-					id: "default",
-					slug: "shqingda",
-					data: SAMPLE_RESUME,
-					updatedAt: "2026-09-12T12:00:00.000Z",
-				},
-			);
-		}
-		return jsonResponse({ error: "unhandled" }, 500);
+import { SAMPLE_RESUME } from "@shared/seed";
+import { normalizeResume } from "@shared/schema";
+beforeEach(() => { localStorage.clear(); vi.useFakeTimers(); vi.stubGlobal("fetch", vi.fn()); });
+afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.useRealTimers(); localStorage.clear(); });
+const edit = (name: string) => (data: typeof SAMPLE_RESUME) => ({ ...data, basics: { ...data.basics, name } });
+describe("browser-only drafts", () => {
+	it("starts with the example directly and never requests cloud data", async () => {
+		const { result } = renderHook(useResume);
+		expect(result.current.resume).toEqual(SAMPLE_RESUME); expect(result.current.started).toBe(true);
+		await act(async () => { await vi.advanceTimersByTimeAsync(5000); });
+		expect(fetch).not.toHaveBeenCalled();
 	});
-	vi.stubGlobal("fetch", fetchMock);
-	return fetchMock;
-}
-
-async function flushHydration() {
-	await act(async () => {
-		await Promise.resolve();
-		await Promise.resolve();
-		await Promise.resolve();
-		await Promise.resolve();
+	it("saves edits after 350ms and restores them after remount", async () => {
+		const hook = renderHook(useResume);
+		act(() => hook.result.current.setResume(edit("Local name")));
+		await act(async () => { await vi.advanceTimersByTimeAsync(350); });
+		expect(loadWorkspace().drafts[0].data.basics.name).toBe("Local name");
+		hook.unmount(); expect(renderHook(useResume).result.current.resume.basics.name).toBe("Local name");
+		expect(fetch).not.toHaveBeenCalled();
 	});
-}
-
-beforeEach(() => {
-	localStorage.clear();
-	vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
-});
-
-afterEach(() => {
-	vi.useRealTimers();
-	vi.unstubAllGlobals();
-	vi.restoreAllMocks();
-});
-
-describe("useResume", () => {
-	it("hydrates from the sample when there is no draft and no database", async () => {
-		mockApi({ db: false });
-		const { result } = renderHook(() => useResume());
-		await flushHydration();
-		expect(result.current.hydrated).toBe(true);
-		expect(result.current.dbAvailable).toBe(false);
-		expect(result.current.resume.basics.name).toBe("商庆达");
+	it("returns to the example after browser storage is cleared", () => {
+		const hook = renderHook(useResume); act(() => hook.result.current.setResume(edit("Custom"))); hook.unmount();
+		localStorage.clear(); expect(renderHook(useResume).result.current.resume).toEqual(SAMPLE_RESUME);
 	});
-
-	it("keeps a local draft instead of overwriting it with the cloud copy", async () => {
-		localStorage.setItem(
-			STORAGE_KEY,
-			JSON.stringify({
-				...SAMPLE_RESUME,
-				basics: { ...SAMPLE_RESUME.basics, label: "全栈工程师" },
-			}),
-		);
-		mockApi({
-			db: true,
-			remote: {
-				id: "default",
-				slug: "shqingda",
-				data: SAMPLE_RESUME,
-				updatedAt: "2026-09-12T12:00:00.000Z",
-			},
-		});
-		const { result } = renderHook(() => useResume());
-		await flushHydration();
-		expect(result.current.hydrated).toBe(true);
-		expect(result.current.resume.basics.label).toBe("全栈工程师");
-		expect(result.current.cloudUpdatedAt).toBe("2026-09-12T12:00:00.000Z");
+	it("retains old local JSON drafts", () => {
+		localStorage.setItem(STORAGE_KEY, JSON.stringify(edit("Legacy")(SAMPLE_RESUME)));
+		expect(renderHook(useResume).result.current.resume.basics.name).toBe("Legacy");
 	});
-
-	it("loads the cloud resume when this browser has no draft", async () => {
-		mockApi({
-			db: true,
-			remote: {
-				id: "default",
-				slug: "shqingda",
-				data: {
-					...SAMPLE_RESUME,
-					basics: { ...SAMPLE_RESUME.basics, label: "全栈工程师" },
-				},
-				updatedAt: "2026-09-12T12:00:00.000Z",
-			},
-		});
-		const { result } = renderHook(() => useResume());
-		await flushHydration();
-		expect(result.current.resume.basics.label).toBe("全栈工程师");
+	it("flushes the last edit when leaving the editor", () => {
+		const hook = renderHook(useResume); act(() => hook.result.current.setResume(edit("Last edit"))); hook.unmount();
+		expect(loadWorkspace().drafts[0].data.basics.name).toBe("Last edit");
 	});
-
-	it("still hydrates when the cloud read fails", async () => {
-		mockApi({ db: true, remote: null });
-		const { result } = renderHook(() => useResume());
-		await flushHydration();
-		expect(result.current.hydrated).toBe(true);
-		expect(result.current.cloudUpdatedAt).toBeNull();
+	it("supports undo and durable import recovery", () => {
+		const { result } = renderHook(useResume);
+		act(() => result.current.setResume(edit("Before import")));
+		act(() => result.current.replace(normalizeResume({ basics: { name: "Imported" } })));
+		expect(result.current.backups[0].data.basics.name).toBe("Before import");
+		act(() => result.current.undo()); expect(result.current.resume.basics.name).toBe("Before import");
+		act(() => result.current.redo()); expect(result.current.resume.basics.name).toBe("Imported");
 	});
-
-	it("writes localStorage 350ms after an edit", async () => {
-		mockApi({ db: false });
-		const { result } = renderHook(() => useResume());
-		await flushHydration();
-
-		act(() => {
-			result.current.setResume((current) => ({
-				...current,
-				basics: { ...current.basics, label: "全栈工程师" },
-			}));
-		});
-
-		expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
-		act(() => {
-			vi.advanceTimersByTime(349);
-		});
-		expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
-		act(() => {
-			vi.advanceTimersByTime(1);
-		});
-		expect(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "").basics.label).toBe("全栈工程师");
+	it("preserves data when storage is full and blocks destructive replacement", () => {
+		const { result } = renderHook(useResume);
+		vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("QuotaExceededError"); });
+		act(() => { result.current.flushLocal(); }); expect(result.current.localError).not.toBe("");
+		act(() => { expect(result.current.replace(normalizeResume({ basics: { name: "Replacement" } }))).toBe(false); });
+		expect(result.current.resume).toEqual(SAMPLE_RESUME);
 	});
-
-	it("writes the cloud copy 1.6s after an edit", async () => {
-		const fetchMock = mockApi({ db: true });
-		const { result } = renderHook(() => useResume());
-		await flushHydration();
-
-		act(() => {
-			result.current.setResume((current) => ({
-				...current,
-				basics: { ...current.basics, label: "全栈工程师" },
-			}));
-		});
-
-		const putsBefore = fetchMock.mock.calls.filter((call) => call[1]?.method === "PUT").length;
-		act(() => {
-			vi.advanceTimersByTime(1599);
-		});
-		expect(fetchMock.mock.calls.filter((call) => call[1]?.method === "PUT")).toHaveLength(putsBefore);
-
-		await act(async () => {
-			vi.advanceTimersByTime(1);
-			await Promise.resolve();
-			await Promise.resolve();
-		});
-		expect(fetchMock.mock.calls.some((call) => call[1]?.method === "PUT")).toBe(true);
-		expect(result.current.cloudUpdatedAt).toBe("2026-09-12T16:00:00.000Z");
+	it("keeps multiple local resumes independent", () => {
+		const { result } = renderHook(useResume); const first = result.current.activeId;
+		act(() => result.current.setResume(edit("First")));
+		act(() => result.current.newDraft("blank")); act(() => result.current.setResume(edit("Second")));
+		act(() => result.current.switchDraft(first)); expect(result.current.resume.basics.name).toBe("First");
 	});
-
-	it("keeps the local draft when the cloud write conflicts", async () => {
-		mockApi({
-			db: true,
-			saveStatus: 409,
-			save: {
-				error: "conflict",
-				id: "default",
-				slug: "shqingda",
-				data: SAMPLE_RESUME,
-				updatedAt: "2026-09-13T00:00:00.000Z",
-			},
-		});
-		const { result } = renderHook(() => useResume());
-		await flushHydration();
-
-		act(() => {
-			result.current.setResume((current) => ({
-				...current,
-				basics: { ...current.basics, label: "全栈工程师" },
-			}));
-		});
-
-		let persistResult = "local";
-		await act(async () => {
-			persistResult = await result.current.persistCloud();
-		});
-
-		expect(persistResult).toBe("conflict");
-		expect(result.current.cloudConflict).toBe(true);
-		expect(result.current.resume.basics.label).toBe("全栈工程师");
-		expect(result.current.cloudUpdatedAt).toBe("2026-09-12T12:00:00.000Z");
-	});
-
-	it("lets persistCloud return local when D1 is down", async () => {
-		mockApi({ db: false });
-		const { result } = renderHook(() => useResume());
-		await flushHydration();
-		await expect(result.current.persistCloud()).resolves.toBe("local");
-	});
-
-	it("normalizes imported JSON and can reset to the sample", async () => {
-		mockApi({ db: false });
-		const { result } = renderHook(() => useResume());
-		await flushHydration();
-
-		act(() => {
-			result.current.replace({ basics: { name: "Ada", label: "Dev" } } as never);
-		});
-		expect(result.current.resume.basics.name).toBe("Ada");
-		expect(result.current.resume.skills).toEqual([]);
-
-		act(() => {
-			result.current.resetSample();
-		});
-		expect(result.current.resume.basics.name).toBe("商庆达");
-	});
-
-	it("stores a slug and falls back to shqingda when cleared", async () => {
-		mockApi({ db: false });
-		const { result } = renderHook(() => useResume());
-		await flushHydration();
-
-		act(() => {
-			result.current.setSlug(" ada ");
-		});
-		expect(result.current.slug).toBe("ada");
-		expect(localStorage.getItem("yizhi:slug")).toBe("ada");
-
-		act(() => {
-			result.current.setSlug("   ");
-		});
-		expect(result.current.slug).toBe("shqingda");
+	it("does not overwrite corrupt browser storage with the example", () => {
+		localStorage.setItem(WORKSPACE_KEY, "broken"); const { result } = renderHook(useResume);
+		act(() => result.current.flushLocal()); expect(result.current.localError).not.toBe("");
+		expect(localStorage.getItem(WORKSPACE_KEY)).toBe("broken");
 	});
 });

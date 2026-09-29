@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
 	Cake,
 	Link2,
@@ -14,7 +15,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { Field, HighlightsEditor, IconButton, ListControls, VisibilityToggle, moveItem } from "./ListControls";
+import { EntryCard, Field, HighlightsEditor, IconButton, ListControls, VisibilityToggle, moveItem } from "./ListControls";
+import { DateInput } from "./DateInput";
+import { PhotoEditor } from "./PhotoEditor";
 import { SortableList } from "./SortableList";
 
 export type EditorTab = "basics" | SectionKey | "theme";
@@ -51,6 +54,7 @@ function patchMeta(setResume: FormProps["setResume"], partial: Partial<Resume["m
 }
 
 export function BasicsForm({ resume, setResume }: FormProps) {
+	const [contactHint, setContactHint] = useState("");
 	const basics = resume.basics;
 	const meta = resume.meta;
 	const hidden = new Set(meta.hiddenBasics);
@@ -73,6 +77,7 @@ export function BasicsForm({ resume, setResume }: FormProps) {
 					).map((option) => (
 						<button
 							key={option.id}
+							aria-pressed={meta.headerAlign === option.id}
 							type="button"
 							onClick={() => patchMeta(setResume, { headerAlign: option.id })}
 							className={cn(
@@ -90,32 +95,8 @@ export function BasicsForm({ resume, setResume }: FormProps) {
 			</div>
 
 			<div>
-				<p className="mb-2 text-sm font-medium text-neutral-700">资料</p>
-				<div className="flex items-center gap-2">
-					{basics.photo ? (
-						<img
-							src={basics.photo}
-							alt=""
-							className="size-10 shrink-0 rounded-md object-contain bg-neutral-100"
-						/>
-					) : null}
-					<Input
-						type="file"
-						accept="image/*"
-						className="min-w-0 flex-1"
-						onChange={(event) => {
-							const file = event.target.files?.[0];
-							if (!file) return;
-							const reader = new FileReader();
-							reader.onload = () => update({ photo: String(reader.result) });
-							reader.readAsDataURL(file);
-						}}
-					/>
-					<VisibilityToggle
-						visible={meta.showPhoto}
-						onToggle={() => patchMeta(setResume, { showPhoto: !meta.showPhoto })}
-					/>
-				</div>
+				<p className="mb-2 text-sm font-medium text-neutral-700">照片</p>
+				<PhotoEditor photo={basics.photo} visible={meta.showPhoto} onVisibilityChange={showPhoto => patchMeta(setResume, { showPhoto })} onChange={photo => setResume(current => ({ ...current, basics: { ...current.basics, photo }, meta: { ...current.meta, showPhoto: !!photo } }))} />
 			</div>
 
 			<div>
@@ -163,6 +144,9 @@ export function BasicsForm({ resume, setResume }: FormProps) {
 								<Input
 									className="h-8 min-w-0 flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0"
 									value={basics[key] ?? ""}
+									aria-label={field.label}
+									onBlur={e => { const value = e.target.value.trim(); setContactHint(key === "email" && value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? "邮箱格式可能不完整，请检查。" : key === "url" && value && !/^https?:\/\//i.test(value) ? "站点建议填写完整的 https:// 地址。" : ""); }}
+									type={key === "email" ? "email" : key === "phone" ? "tel" : key === "url" ? "url" : "text"}
 									placeholder={field.placeholder}
 									onChange={(e) => update({ [key]: e.target.value })}
 								/>
@@ -171,6 +155,7 @@ export function BasicsForm({ resume, setResume }: FormProps) {
 						);
 					}}
 				</SortableList>
+				<p role="status" className="text-xs text-amber-800">{contactHint}</p>
 				<p className="mt-2 text-xs text-muted-foreground">按住左侧拖动排序，点眼睛隐藏或显示。空字段即使开启也不会印在简历上。</p>
 			</div>
 
@@ -179,7 +164,7 @@ export function BasicsForm({ resume, setResume }: FormProps) {
 					value={basics.summary ?? ""}
 					onChange={(e) => update({ summary: e.target.value })}
 					rows={3}
-					placeholder="可选，显示在页头下方"
+					placeholder="可选：用两三句话说明擅长的领域、主要经验和求职方向"
 				/>
 			</Field>
 		</div>
@@ -219,6 +204,7 @@ function BasicsFieldRow({
 			<span className="w-10 shrink-0 text-xs text-neutral-500">{label}</span>
 			<Input
 				className="h-8 min-w-0 flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0"
+				aria-label={label}
 				value={value}
 				onChange={(e) => onChange(e.target.value)}
 			/>
@@ -230,8 +216,9 @@ function BasicsFieldRow({
 export function SkillsForm({ resume, setResume }: FormProps) {
 	return (
 		<div className="grid gap-3">
+			{!resume.skills.length && <p className="text-sm leading-6 text-neutral-500">按领域组织技能，例如编程语言、设计工具或专业能力。</p>}
 			{resume.skills.map((skill, index) => (
-				<div key={skill.id} className="rounded-xl border border-black/8 bg-white p-3">
+				<EntryCard key={skill.id} title={skill.name} onCopy={() => patch(setResume, "skills", [...resume.skills.slice(0, index + 1), { ...structuredClone(skill), id: uid("copy") }, ...resume.skills.slice(index + 1)])}>
 					<div className="mb-2 flex justify-end">
 						<ListControls
 							index={index}
@@ -276,7 +263,7 @@ export function SkillsForm({ resume, setResume }: FormProps) {
 							/>
 						</Field>
 					</div>
-				</div>
+				</EntryCard>
 			))}
 			<Button
 				type="button"
@@ -297,8 +284,9 @@ export function SkillsForm({ resume, setResume }: FormProps) {
 export function ExperienceForm({ resume, setResume }: FormProps) {
 	return (
 		<div className="grid gap-3">
+			{!resume.experience.length && <p className="text-sm leading-6 text-neutral-500">先添加最近一份工作或实习。每条要点写清行动、方法和结果。</p>}
 			{resume.experience.map((item, index) => (
-				<div key={item.id} className="rounded-xl border border-black/8 bg-white p-3">
+				<EntryCard key={item.id} title={[item.company, item.position, item.startDate, item.endDate].filter(Boolean).join(" · ")} onCopy={() => patch(setResume, "experience", [...resume.experience.slice(0, index + 1), { ...structuredClone(item), id: uid("copy") }, ...resume.experience.slice(index + 1)])}>
 					<div className="mb-2 flex justify-end">
 						<ListControls
 							index={index}
@@ -315,7 +303,7 @@ export function ExperienceForm({ resume, setResume }: FormProps) {
 							}
 						/>
 					</div>
-					<div className="grid grid-cols-2 gap-3">
+					<div className="editor-field-grid grid grid-cols-2 gap-3">
 						<Field label="公司 / 组织">
 							<Input
 								value={item.company}
@@ -345,28 +333,28 @@ export function ExperienceForm({ resume, setResume }: FormProps) {
 							/>
 						</Field>
 						<Field label="开始">
-							<Input
+							<DateInput
 								value={item.startDate}
-								onChange={(e) =>
+								onChange={(value) =>
 									patch(
 										setResume,
 										"experience",
 										resume.experience.map((row) =>
-											row.id === item.id ? { ...row, startDate: e.target.value } : row,
+											row.id === item.id ? { ...row, startDate: value } : row,
 										),
 									)
 								}
 							/>
 						</Field>
 						<Field label="结束">
-							<Input
+							<DateInput end start={item.startDate}
 								value={item.endDate}
-								onChange={(e) =>
+								onChange={(value) =>
 									patch(
 										setResume,
 										"experience",
 										resume.experience.map((row) =>
-											row.id === item.id ? { ...row, endDate: e.target.value } : row,
+											row.id === item.id ? { ...row, endDate: value } : row,
 										),
 									)
 								}
@@ -387,7 +375,7 @@ export function ExperienceForm({ resume, setResume }: FormProps) {
 							}
 						/>
 					</div>
-				</div>
+				</EntryCard>
 			))}
 			<Button
 				type="button"
@@ -415,8 +403,9 @@ export function ExperienceForm({ resume, setResume }: FormProps) {
 export function ProjectsForm({ resume, setResume }: FormProps) {
 	return (
 		<div className="grid gap-3">
+			{!resume.projects.length && <p className="text-sm leading-6 text-neutral-500">选择与目标职位相关的项目，说明你的职责和贡献。</p>}
 			{resume.projects.map((item, index) => (
-				<div key={item.id} className="rounded-xl border border-black/8 bg-white p-3">
+				<EntryCard key={item.id} title={item.name} onCopy={() => patch(setResume, "projects", [...resume.projects.slice(0, index + 1), { ...structuredClone(item), id: uid("copy") }, ...resume.projects.slice(index + 1)])}>
 					<div className="mb-2 flex justify-end">
 						<ListControls
 							index={index}
@@ -431,7 +420,7 @@ export function ProjectsForm({ resume, setResume }: FormProps) {
 							}
 						/>
 					</div>
-					<div className="grid grid-cols-2 gap-3">
+					<div className="editor-field-grid grid grid-cols-2 gap-3">
 						<Field label="项目名称">
 							<Input
 								value={item.name}
@@ -515,7 +504,7 @@ export function ProjectsForm({ resume, setResume }: FormProps) {
 							}
 						/>
 					</div>
-				</div>
+				</EntryCard>
 			))}
 			<Button
 				type="button"
@@ -536,8 +525,9 @@ export function ProjectsForm({ resume, setResume }: FormProps) {
 export function EducationForm({ resume, setResume }: FormProps) {
 	return (
 		<div className="grid gap-3">
+			{!resume.education.length && <p className="text-sm leading-6 text-neutral-500">从最近一段教育经历开始，可以补充相关课程或成绩。</p>}
 			{resume.education.map((item, index) => (
-				<div key={item.id} className="rounded-xl border border-black/8 bg-white p-3">
+				<EntryCard key={item.id} title={[item.institution, item.area, item.startDate, item.endDate].filter(Boolean).join(" · ")} onCopy={() => patch(setResume, "education", [...resume.education.slice(0, index + 1), { ...structuredClone(item), id: uid("copy") }, ...resume.education.slice(index + 1)])}>
 					<div className="mb-2 flex justify-end">
 						<ListControls
 							index={index}
@@ -554,7 +544,7 @@ export function EducationForm({ resume, setResume }: FormProps) {
 							}
 						/>
 					</div>
-					<div className="grid grid-cols-2 gap-3">
+					<div className="editor-field-grid grid grid-cols-2 gap-3">
 						<Field label="学校">
 							<Input
 								value={item.institution}
@@ -612,28 +602,28 @@ export function EducationForm({ resume, setResume }: FormProps) {
 							/>
 						</Field>
 						<Field label="开始">
-							<Input
+							<DateInput
 								value={item.startDate}
-								onChange={(e) =>
+								onChange={(value) =>
 									patch(
 										setResume,
 										"education",
 										resume.education.map((row) =>
-											row.id === item.id ? { ...row, startDate: e.target.value } : row,
+											row.id === item.id ? { ...row, startDate: value } : row,
 										),
 									)
 								}
 							/>
 						</Field>
 						<Field label="结束">
-							<Input
+							<DateInput end start={item.startDate}
 								value={item.endDate}
-								onChange={(e) =>
+								onChange={(value) =>
 									patch(
 										setResume,
 										"education",
 										resume.education.map((row) =>
-											row.id === item.id ? { ...row, endDate: e.target.value } : row,
+											row.id === item.id ? { ...row, endDate: value } : row,
 										),
 									)
 								}
@@ -654,7 +644,7 @@ export function EducationForm({ resume, setResume }: FormProps) {
 							}
 						/>
 					</div>
-				</div>
+				</EntryCard>
 			))}
 			<Button
 				type="button"
@@ -683,8 +673,9 @@ export function EducationForm({ resume, setResume }: FormProps) {
 export function AwardsForm({ resume, setResume }: FormProps) {
 	return (
 		<div className="grid gap-3">
+			{!resume.awards.length && <p className="text-sm leading-6 text-neutral-500">添加与目标职位相关的奖项，注明颁发机构和年份。</p>}
 			{resume.awards.map((item, index) => (
-				<div key={item.id} className="rounded-xl border border-black/8 bg-white p-3">
+				<EntryCard key={item.id} title={item.title} onCopy={() => patch(setResume, "awards", [...resume.awards.slice(0, index + 1), { ...structuredClone(item), id: uid("copy") }, ...resume.awards.slice(index + 1)])}>
 					<div className="mb-2 flex justify-end">
 						<ListControls
 							index={index}
@@ -699,7 +690,7 @@ export function AwardsForm({ resume, setResume }: FormProps) {
 							}
 						/>
 					</div>
-					<div className="grid grid-cols-2 gap-3">
+					<div className="editor-field-grid grid grid-cols-2 gap-3">
 						<Field label="奖项">
 							<Input
 								value={item.title}
@@ -743,7 +734,7 @@ export function AwardsForm({ resume, setResume }: FormProps) {
 							/>
 						</Field>
 					</div>
-				</div>
+				</EntryCard>
 			))}
 			<Button
 				type="button"
@@ -764,8 +755,9 @@ export function AwardsForm({ resume, setResume }: FormProps) {
 export function PublicationsForm({ resume, setResume }: FormProps) {
 	return (
 		<div className="grid gap-3">
+			{!resume.publications.length && <p className="text-sm leading-6 text-neutral-500">填写论文或作品名称，可补充发表平台与链接。</p>}
 			{resume.publications.map((item, index) => (
-				<div key={item.id} className="rounded-xl border border-black/8 bg-white p-3">
+				<EntryCard key={item.id} title={item.name} onCopy={() => patch(setResume, "publications", [...resume.publications.slice(0, index + 1), { ...structuredClone(item), id: uid("copy") }, ...resume.publications.slice(index + 1)])}>
 					<div className="mb-2 flex justify-end">
 						<ListControls
 							index={index}
@@ -811,7 +803,7 @@ export function PublicationsForm({ resume, setResume }: FormProps) {
 								}
 							/>
 						</Field>
-						<div className="grid grid-cols-2 gap-3">
+						<div className="editor-field-grid grid grid-cols-2 gap-3">
 							<Field label="出版方">
 								<Input
 									value={item.publisher ?? ""}
@@ -842,7 +834,7 @@ export function PublicationsForm({ resume, setResume }: FormProps) {
 							</Field>
 						</div>
 					</div>
-				</div>
+				</EntryCard>
 			))}
 			<Button
 				type="button"
@@ -863,8 +855,9 @@ export function PublicationsForm({ resume, setResume }: FormProps) {
 export function LanguagesForm({ resume, setResume }: FormProps) {
 	return (
 		<div className="grid gap-3">
+			{!resume.languages.length && <p className="text-sm leading-6 text-neutral-500">写明语言及熟练程度，例如英语、工作交流或考试成绩。</p>}
 			{resume.languages.map((item, index) => (
-				<div key={item.id} className="flex items-end gap-2 rounded-xl border border-black/8 bg-white p-3">
+				<EntryCard key={item.id} title={item.language} onCopy={() => patch(setResume, "languages", [...resume.languages.slice(0, index + 1), { ...structuredClone(item), id: uid("copy") }, ...resume.languages.slice(index + 1)])}>
 					<Field label="语言">
 						<Input
 							value={item.language}
@@ -907,7 +900,7 @@ export function LanguagesForm({ resume, setResume }: FormProps) {
 							)
 						}
 					/>
-				</div>
+				</EntryCard>
 			))}
 			<Button
 				type="button"
@@ -948,7 +941,7 @@ export function CustomSectionsForm({ resume, setResume }: FormProps) {
 						<Input
 							className="min-w-0 flex-1"
 							value={section.title}
-							placeholder="自定义区块"
+							aria-label="自定义区块名称" placeholder="自定义区块"
 							onChange={(e) =>
 								updateCustomSection(setResume, resume, section.id, (row) => ({
 									...row,
@@ -976,7 +969,7 @@ export function CustomSectionsForm({ resume, setResume }: FormProps) {
 									<Input
 										className="min-w-0 flex-1 bg-white"
 										value={item.title}
-										placeholder="标题"
+										aria-label="自定义条目标题" placeholder="标题"
 										onChange={(e) =>
 											updateCustomSection(setResume, resume, section.id, (row) => ({
 												...row,
@@ -998,11 +991,11 @@ export function CustomSectionsForm({ resume, setResume }: FormProps) {
 										<Trash2 className="size-4" />
 									</IconButton>
 								</div>
-								<div className="mt-2 grid grid-cols-2 gap-2">
+								<div className="editor-field-grid mt-2 grid grid-cols-2 gap-2">
 									<Input
 										className="bg-white"
 										value={item.subtitle ?? ""}
-										placeholder="副标题"
+										aria-label="自定义条目副标题" placeholder="副标题"
 										onChange={(e) =>
 											updateCustomSection(setResume, resume, section.id, (row) => ({
 												...row,
@@ -1015,7 +1008,7 @@ export function CustomSectionsForm({ resume, setResume }: FormProps) {
 									<Input
 										className="bg-white"
 										value={item.date ?? ""}
-										placeholder="时间"
+										aria-label="自定义条目时间" placeholder="时间"
 										onChange={(e) =>
 											updateCustomSection(setResume, resume, section.id, (row) => ({
 												...row,
@@ -1095,12 +1088,13 @@ export function ThemeForm({ resume, setResume }: FormProps) {
 				<div className="grid grid-cols-2 gap-2">
 					{(
 						[
-							{ id: "single", title: "长图", hint: "整份渲成一张图，高度随内容变化，适合分享预览" },
+							{ id: "single", title: "长页 PDF", hint: "图片内容，不可直接选中文字，适合浏览" },
 							{ id: "multi", title: "A4", hint: "分页高保真文字稿，适合打印和投递" },
 						] as const
 					).map((option) => (
 						<button
 							key={option.id}
+							aria-pressed={layoutMode === option.id}
 							type="button"
 							onClick={() =>
 								setResume((current) => ({
@@ -1123,7 +1117,7 @@ export function ThemeForm({ resume, setResume }: FormProps) {
 					))}
 				</div>
 			</div>
-			<Field label={`字号基准 ${meta.fontScale.toFixed(2)}`}>
+			<Field label={`文字大小 ${Math.round(meta.fontScale * 100)}%`}>
 				<input
 					type="range"
 					min={0.85}

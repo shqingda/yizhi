@@ -85,7 +85,7 @@ function renderSection(key: SectionKey, resume: Resume) {
 		case "skills":
 			if (!resume.skills.some((s) => s.name || s.keywords)) return null;
 			return (
-				<section key={key} className="resume-section">
+				<section key={key} className="resume-section" data-section={key}>
 					<SectionHeading title={SECTION_TITLES.skills} blockId="heading-skills" />
 					<dl className="resume-skills">
 						{resume.skills
@@ -102,7 +102,7 @@ function renderSection(key: SectionKey, resume: Resume) {
 		case "experience":
 			if (!resume.experience.some((e) => e.company || e.position)) return null;
 			return (
-				<section key={key} className="resume-section">
+				<section key={key} className="resume-section" data-section={key}>
 					<SectionHeading title={SECTION_TITLES.experience} blockId="heading-experience" />
 					{resume.experience.map((item) => (
 						<div key={item.id} className="resume-entry" {...blockProps(item.id)}>
@@ -119,7 +119,7 @@ function renderSection(key: SectionKey, resume: Resume) {
 		case "projects":
 			if (!resume.projects.some((p) => p.name)) return null;
 			return (
-				<section key={key} className="resume-section">
+				<section key={key} className="resume-section" data-section={key}>
 					<SectionHeading title={SECTION_TITLES.projects} blockId="heading-projects" />
 					{resume.projects.map((item) => (
 						<div key={item.id} className="resume-entry" {...blockProps(item.id)}>
@@ -136,7 +136,7 @@ function renderSection(key: SectionKey, resume: Resume) {
 		case "education":
 			if (!resume.education.some((e) => e.institution)) return null;
 			return (
-				<section key={key} className="resume-section">
+				<section key={key} className="resume-section" data-section={key}>
 					<SectionHeading title={SECTION_TITLES.education} blockId="heading-education" />
 					{resume.education.map((item) => (
 						<div key={item.id} className="resume-entry" {...blockProps(item.id)}>
@@ -153,7 +153,7 @@ function renderSection(key: SectionKey, resume: Resume) {
 		case "awards":
 			if (!resume.awards.some((a) => a.title)) return null;
 			return (
-				<section key={key} className="resume-section">
+				<section key={key} className="resume-section" data-section={key}>
 					<SectionHeading title={SECTION_TITLES.awards} blockId="heading-awards" />
 					{resume.awards
 						.filter((a) => a.title)
@@ -172,7 +172,7 @@ function renderSection(key: SectionKey, resume: Resume) {
 		case "publications":
 			if (!resume.publications.some((p) => p.name)) return null;
 			return (
-				<section key={key} className="resume-section">
+				<section key={key} className="resume-section" data-section={key}>
 					<SectionHeading title={SECTION_TITLES.publications} blockId="heading-publications" />
 					{resume.publications
 						.filter((p) => p.name)
@@ -189,7 +189,7 @@ function renderSection(key: SectionKey, resume: Resume) {
 		case "languages":
 			if (!resume.languages.some((l) => l.language || l.fluency)) return null;
 			return (
-				<section key={key} className="resume-section">
+				<section key={key} className="resume-section" data-section={key}>
 					<SectionHeading title={SECTION_TITLES.languages} blockId="heading-languages" />
 					<ul className="resume-languages" {...blockProps("languages")}>
 						{resume.languages
