@@ -1,7 +1,7 @@
 import { useCallback, useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { LoaderCircle, Download, ArrowLeft } from "lucide-react";
+import { LoaderCircle, Download, ArrowLeft, ZoomIn, ZoomOut } from "lucide-react";
 import { type Resume } from "@shared/schema";
 import { ResumeDocument } from "@/components/resume/ResumeDocument";
 import { Button } from "@/components/ui/button";
@@ -48,12 +48,15 @@ export function PublicResumePage() {
 		finally { setExporting(false); }
 	};
 	return <div className="public-stage min-h-screen bg-[#e5e5ea] pb-16">
-		<header className="no-print mx-auto flex max-w-[210mm] flex-wrap items-center justify-between gap-3 px-4 py-5">
-			{<Button variant="ghost" size="sm" nativeButton={false} render={<Link to="/" />}><ArrowLeft />返回编辑</Button>}
-			<div><p className="text-[15px] font-semibold">{resume.meta.hiddenBasics.includes("name") ? "个人简历" : `${resume.basics.name || "个人"}的简历`}</p><p className="mt-1 text-xs text-neutral-600">{mode === "single" ? "长页 PDF（图片内容）" : `A4 PDF · ${layout.pageCount} 页`}</p></div>
-			<Button size="sm" disabled={exporting} onClick={() => void exportPdf()}><Download />{exporting ? "准备中…" : mode === "single" ? "导出长页 PDF" : "导出 A4 PDF"}</Button>
+		<header className="no-print mx-auto flex max-w-[210mm] items-center justify-between gap-2 px-3 py-4">
+			<Button variant="ghost" size="sm" className="max-sm:min-h-10" aria-label="返回编辑" title="返回编辑" nativeButton={false} render={<Link to="/" />}><ArrowLeft /><span className="hidden sm:inline">返回编辑</span></Button>
+			<div className="flex items-center gap-1">
+				<Button variant="ghost" size="sm" onClick={() => setZoom(null)}>适应屏幕</Button>
+				<Button variant="ghost" size="sm" aria-label="放大" title="放大" onClick={() => setZoom(Math.min(2, scale + .2))}><ZoomIn /><span className="hidden sm:inline">放大</span></Button>
+				<Button variant="ghost" size="sm" aria-label="缩小" title="缩小" onClick={() => setZoom(Math.max(.2, scale - .2))}><ZoomOut /><span className="hidden sm:inline">缩小</span></Button>
+			</div>
+			<Button size="sm" aria-label={mode === "single" ? "导出长页 PDF" : "导出 A4 PDF"} title={mode === "single" ? "导出长页 PDF" : "导出 A4 PDF"} disabled={exporting} onClick={() => void exportPdf()}>{exporting ? <LoaderCircle className="animate-spin" /> : <Download />}<span className="hidden sm:inline">{exporting ? "准备中…" : mode === "single" ? "导出长页 PDF" : "导出 A4 PDF"}</span></Button>
 		</header>
-		<div className="no-print mb-4 flex justify-center gap-2"><Button variant="ghost" size="sm" onClick={() => setZoom(null)}>适应屏幕</Button><Button variant="ghost" size="sm" onClick={() => setZoom(Math.min(2, scale + .2))}>放大</Button><Button variant="ghost" size="sm" onClick={() => setZoom(Math.max(.2, scale - .2))}>缩小</Button></div>
 		<div ref={container} className="flex overflow-auto px-3 pb-3"><div className="preview-paper mx-auto" style={{ width: A4_PX * scale, height: layout.height * scale }}><div className="preview-scale" style={{ width: A4_PX, transform: `scale(${scale})` }}><div className="resume-frame"><ResumeDocument resume={resume} onLayout={handleLayout} /></div></div></div></div>
 	</div>;
 }

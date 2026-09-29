@@ -141,8 +141,6 @@ export function EditorPage() {
 								<DropdownMenuItem onClick={() => setPanel("recovery")}><History />查看恢复点</DropdownMenuItem>
 								<DropdownMenuItem onClick={() => { setRename(model.drafts.find(d => d.id === model.activeId)!.name); setPanel("manage"); }}><Files />管理简历</DropdownMenuItem>
 								<div className="compact-history"><DropdownMenuSeparator /><DropdownMenuItem disabled={!model.canUndo} onClick={model.undo}><Undo2 />撤销修改</DropdownMenuItem><DropdownMenuItem disabled={!model.canRedo} onClick={model.redo}><Redo2 />重做修改</DropdownMenuItem></div>
-								<DropdownMenuSeparator />
-								<DropdownMenuItem onClick={openWebPreview}><ExternalLink />网页预览</DropdownMenuItem>
 							</DropdownMenuContent>
 						</DropdownMenu>
 					</div>
