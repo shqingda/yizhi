@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from "react";
+import { memo, useLayoutEffect, useRef } from "react";
 import { Cake, Globe2, Mail, MapPin, Phone, UserRound, type LucideIcon } from "lucide-react";
 import type { BasicsFieldKey, ContactFieldKey, Resume, SectionKey } from "@shared/schema";
 import { useResumeFit, type ResumeLayoutInfo } from "@/hooks/useResumeFit";
@@ -46,15 +46,7 @@ function SectionHeading({ title, blockId }: { title: string; blockId: string }) 
 	);
 }
 
-function EntryHeader({
-	title,
-	meta,
-	date,
-}: {
-	title: string;
-	meta?: string;
-	date?: string;
-}) {
+function EntryHeader({ title, meta, date }: { title: string; meta?: string; date?: string }) {
 	if (!title && !meta && !date) return null;
 	return (
 		<div className="resume-entry-head">
@@ -159,11 +151,7 @@ function renderSection(key: SectionKey, resume: Resume) {
 						.filter((a) => a.title)
 						.map((award) => (
 							<div key={award.id} className="resume-entry" {...blockProps(award.id)}>
-								<EntryHeader
-									title={award.title}
-									meta={award.awarder}
-									date={award.date}
-								/>
+								<EntryHeader title={award.title} meta={award.awarder} date={award.date} />
 								{award.summary ? <p className="resume-note">{award.summary}</p> : null}
 							</div>
 						))}
@@ -222,7 +210,7 @@ function renderSection(key: SectionKey, resume: Resume) {
 	}
 }
 
-export function ResumeDocument({
+export const ResumeDocument = memo(function ResumeDocument({
 	resume,
 	onLayout,
 }: {
@@ -232,26 +220,7 @@ export function ResumeDocument({
 	const sheetRef = useRef<HTMLElement>(null);
 	const innerRef = useRef<HTMLDivElement>(null);
 	const layoutMode = resume.meta.layoutMode === "multi" ? "multi" : "single";
-	const revision = JSON.stringify({
-		basics: resume.basics,
-		skills: resume.skills,
-		experience: resume.experience,
-		projects: resume.projects,
-		education: resume.education,
-		awards: resume.awards,
-		publications: resume.publications,
-		languages: resume.languages,
-		customSections: resume.customSections,
-		fontScale: resume.meta.fontScale,
-		showPhoto: resume.meta.showPhoto,
-		headerAlign: resume.meta.headerAlign,
-		sectionOrder: resume.meta.sectionOrder,
-		hiddenSections: resume.meta.hiddenSections,
-		basicsOrder: resume.meta.basicsOrder,
-		hiddenBasics: resume.meta.hiddenBasics,
-		layoutMode,
-	});
-	const layout = useResumeFit(sheetRef, innerRef, layoutMode, revision);
+	const layout = useResumeFit(sheetRef, innerRef, layoutMode, resume);
 	const pageCount = layout.pageCount;
 
 	useLayoutEffect(() => {
@@ -320,4 +289,4 @@ export function ResumeDocument({
 			</div>
 		</article>
 	);
-}
+});

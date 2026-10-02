@@ -17,8 +17,6 @@
 	},
 	"include": [
 		"src/worker",
-		"src/db",
-		"src/shared",
-		"worker-configuration.d.ts"
+		"src/shared"
 	]
 }

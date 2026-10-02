@@ -8,7 +8,7 @@ import {
 	toggleHidden,
 	uid,
 } from "@shared/schema";
-import { SAMPLE_RESUME } from "@shared/seed";
+import { SAMPLE_RESUME } from "./fixtures";
 import sampleResumeJson from "../../public/sample-resume.json?raw";
 
 describe("toggleHidden", () => {

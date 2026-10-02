@@ -198,8 +198,6 @@ const SAMPLE_PROJECT_DATES: Record<string, { startDate: string; endDate: string 
 	proj_bot: { startDate: "2018/01", endDate: "2018/05" },
 };
 
-export const DEFAULT_SLUG = "shqingda";
-
 export function uid(prefix = "id"): string {
 	return `${prefix}_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36).slice(-4)}`;
 }

@@ -1,6 +1,6 @@
 import { useLayoutEffect, useState, type RefObject } from "react";
 import { paginateBlocks, type PaginateBlock, type PageBreak } from "@shared/paginate";
-import type { LayoutMode } from "@shared/schema";
+import type { LayoutMode, Resume } from "@shared/schema";
 
 const PAGE_RATIO = 297 / 210;
 const SPACER_CLASS = "resume-page-spacer";
@@ -56,7 +56,7 @@ export function useResumeFit(
 	sheetRef: RefObject<HTMLElement | null>,
 	innerRef: RefObject<HTMLElement | null>,
 	mode: LayoutMode,
-	revision: string,
+	revision: Resume,
 ): ResumeLayoutInfo {
 	const [info, setInfo] = useState<ResumeLayoutInfo>({ pageCount: 1, height: 0 });
 
@@ -133,9 +133,14 @@ export function useResumeFit(
 				}
 			}
 
-			for (const node of inner.querySelectorAll<HTMLElement>("[data-block-id]")) node.toggleAttribute("data-oversized", node.offsetHeight > box);
+			for (const node of inner.querySelectorAll<HTMLElement>("[data-block-id]"))
+				node.toggleAttribute("data-oversized", node.offsetHeight > box);
 			applySpacers(inner, result.breaks);
-			setInfo({ pageCount: result.pageCount, height: Math.max(result.pageCount * pageHeight(), sheet.scrollHeight), overflow: measureBlocks(inner).some(block => block.height > box) });
+			setInfo({
+				pageCount: result.pageCount,
+				height: Math.max(result.pageCount * pageHeight(), sheet.scrollHeight),
+				overflow: measureBlocks(inner).some((block) => block.height > box),
+			});
 		};
 
 		run();
