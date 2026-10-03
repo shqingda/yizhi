@@ -2,7 +2,7 @@ import { ThemeMenu } from "@/components/ThemeMenu";
 import { useCallback, useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Download, ArrowLeft, ZoomIn, ZoomOut } from "lucide-react";
+import { Download, ArrowLeft, FileJson, Scan, ZoomIn, ZoomOut } from "lucide-react";
 import { ResumeDocument } from "@/components/resume/ResumeDocument";
 import { Button } from "@/components/ui/button";
 import type { ResumeLayoutInfo } from "@/hooks/useResumeFit";
@@ -48,17 +48,21 @@ export function PreviewPage() {
      : accessState === "checking" ? "正在检查编辑权…" : localError ? "当前预览已保留。请查看下方提示，并下载可用备份。" : "另一个页面正在编辑。这里会跟随已保存内容更新；关闭原编辑页后，可在此继续编辑。"}</p>}
     {localError && <p className="save-notice" role="alert">{localError}</p>}
     <div className="public-toolbar-controls">
-     {canEdit ? <Button variant="ghost" size="sm" nativeButton={false} render={<Link to="/" />}><ArrowLeft />返回编辑</Button>
-      : accessState !== "unsupported" && accessState !== "editor" && !model.localConflict && <Button size="sm" variant="outline" disabled={accessState === "checking"} onClick={() => void requestEdit()}>在此编辑</Button>}
-     <ThemeMenu />
-     <Button size="sm" onClick={() => setExportOpen(true)}><Download />导出简历</Button>
-     <Button variant="ghost" size="sm" onClick={() => downloadJson(resume, cleanFilename(pdfFilename(resume)).replace(/\.pdf$/, ".json"))}>下载 JSON 备份</Button>
-    </div>
-    <div className="public-toolbar-controls">
-     <Button variant="ghost" size="sm" onClick={() => setZoom(null)}>适应屏幕</Button>
-     <Button variant="ghost" size="icon" aria-label="缩小预览" onClick={() => setZoom(Math.max(0.2, scale - 0.2))}><ZoomOut /></Button>
-     <span className="text-xs">{Math.round(scale * 100)}%</span>
-     <Button variant="ghost" size="icon" aria-label="放大预览" onClick={() => setZoom(Math.min(2, scale + 0.2))}><ZoomIn /></Button>
+     <div className="public-toolbar-navigation">
+      {canEdit ? <Button variant="ghost" size="sm" aria-label="返回编辑" title="返回编辑" nativeButton={false} render={<Link to="/" />}><ArrowLeft /><span className="hidden sm:inline">返回编辑</span></Button>
+       : accessState !== "unsupported" && accessState !== "editor" && !model.localConflict && <Button size="sm" variant="outline" disabled={accessState === "checking"} onClick={() => void requestEdit()}>在此编辑</Button>}
+     </div>
+     <div className="public-toolbar-view" role="group" aria-label="预览设置">
+      <ThemeMenu />
+      <Button variant="ghost" size="sm" aria-label="适应屏幕" title="适应屏幕" onClick={() => setZoom(null)}><Scan className="sm:hidden" /><span className="hidden sm:inline">适应屏幕</span></Button>
+      <Button variant="ghost" size="icon" aria-label="缩小预览" title="缩小预览" onClick={() => setZoom(Math.max(0.2, scale - 0.2))}><ZoomOut /></Button>
+      <span className="public-toolbar-zoom-value">{Math.round(scale * 100)}%</span>
+      <Button variant="ghost" size="icon" aria-label="放大预览" title="放大预览" onClick={() => setZoom(Math.min(2, scale + 0.2))}><ZoomIn /></Button>
+     </div>
+     <div className="public-toolbar-actions" role="group" aria-label="简历下载">
+      <Button variant="ghost" size="sm" aria-label="下载 JSON 备份" title="下载 JSON 备份" onClick={() => downloadJson(resume, cleanFilename(pdfFilename(resume)).replace(/\.pdf$/, ".json"))}><FileJson className="sm:hidden" /><span className="hidden sm:inline">下载 JSON 备份</span></Button>
+      <Button size="sm" aria-label="导出简历" title="导出简历" onClick={() => setExportOpen(true)}><Download /><span className="hidden sm:inline">导出简历</span></Button>
+     </div>
     </div>
    </header>
 			<div ref={container} className="flex overflow-auto px-3 pb-3">

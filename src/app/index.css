@@ -457,7 +457,9 @@ body {
 .save-notice { display:flex; flex-wrap:wrap; align-items:center; gap:.5rem; flex-shrink:0; padding:.625rem 1rem; max-height:40%; overflow:auto; background:var(--card); border-bottom:1px solid var(--border); font-size:var(--ui-small); }
 .save-notice p { flex:1 1 15rem; min-width:0; overflow-wrap:anywhere; }
 .readonly-notice { border:1px solid var(--border); border-radius:.75rem; background:var(--card); color:var(--foreground); padding:.75rem; margin:.5rem 0; font-size:var(--ui-body); }
-.public-toolbar-controls { display:flex; align-items:center; flex-wrap:wrap; gap:.375rem; margin-top:.5rem; }
+.public-toolbar-controls { display:flex; align-items:center; justify-content:space-between; flex-wrap:nowrap; gap:1rem; margin:.25rem -.25rem -.25rem; padding:.25rem; overflow-x:auto; }
+.public-toolbar-navigation, .public-toolbar-view, .public-toolbar-actions { display:flex; flex-shrink:0; align-items:center; gap:.375rem; }
+.public-toolbar-zoom-value { min-width:4ch; text-align:center; white-space:nowrap; font-size:.75rem; font-variant-numeric:tabular-nums; }
 .public-toolbar .workspace-status-row { padding-inline:0; }
 .studio-sidebar { z-index:20; display:flex; flex-shrink:0; flex-direction:column; width:22.5rem; overflow:hidden; background:var(--muted); border-right:1px solid var(--border); }
 .studio-sidebar[data-open=false] { width:0; border-right-width:0; }
@@ -500,6 +502,8 @@ input[type=range] { accent-color:var(--primary); }
 }
 @media (max-width:850px) { .editor-format-tabs { display:none; } .editor-toolbar-row { gap:.5rem; } }
 @media (max-width:640px) {
+ .public-toolbar-controls { gap:.25rem; }
+ .public-toolbar-view, .public-toolbar-actions { gap:0; }
  .editor-brand, .toolbar-action-label, .mode-label-full { display:none; }
  .mode-label-short { display:inline; }
  .editor-toolbar-row { padding:.375rem .5rem; gap:.25rem; }
@@ -522,6 +526,12 @@ input[type=range] { accent-color:var(--primary); }
  button, [data-slot=dialog-close] { min-width:44px; }
  input:not([type=checkbox]):not([type=radio]), select { min-height:44px; }
  [data-slot=dropdown-menu-item], [data-slot=dropdown-menu-radio-item] { padding-block:.75rem; }
+}
+@media (pointer:fine) {
+ .public-toolbar-controls .pressable { min-width:0; min-height:0; }
+}
+@media (pointer:coarse) {
+ .public-toolbar-controls .pressable { min-width:44px; min-height:44px; }
 }
 /* UI theme never changes the white resume paper or exported document. */
 .dark {
