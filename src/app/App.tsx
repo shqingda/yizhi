@@ -1,13 +1,14 @@
-import { ThemeProvider, ThemeToaster } from "@/components/ThemeMenu";
+import { ThemeProvider, ThemeToaster } from "@/components/ThemeProvider";
 import { useVisualViewport } from "@/hooks/useVisualViewport";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { lazy, Suspense } from "react";
-import { PreviewPage } from "@/pages/PreviewPage";
 import { WorkspaceProvider } from "@/components/WorkspaceProvider";
 
 const EditorPage = lazy(() =>
 	import("@/pages/EditorPage").then((module) => ({ default: module.EditorPage })),
 );
+
+const PreviewPage = lazy(() => import("@/pages/PreviewPage").then((module) => ({ default: module.PreviewPage })));
 
 export default function App() {
 	useVisualViewport();

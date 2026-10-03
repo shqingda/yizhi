@@ -31,10 +31,12 @@ function measure(files) {
 }
 
 const editor = measure(scriptsFor("index.html", "src/app/pages/EditorPage.tsx"));
+const entry = measure(scriptsFor("index.html"));
 const sample = measure(["sample-resume.json"]);
 console.log(
 	`Editor JavaScript (including shared imports): ${(editor.raw / 1000).toFixed(2)} kB / gzip ${(editor.gzip / 1000).toFixed(2)} kB`,
 );
+console.log(`Shared entry JavaScript: ${(entry.raw / 1000).toFixed(2)} kB`);
 console.log(
 	`Sample JSON (only first use/reset): ${(sample.raw / 1000).toFixed(2)} kB / gzip ${(sample.gzip / 1000).toFixed(2)} kB`,
 );
@@ -42,6 +44,7 @@ console.log(
 // Include all static dependencies: moving bytes between chunks must not hide regressions.
 if (editor.raw > 600_000 || editor.gzip > 200_000)
 	throw new Error("Editor JavaScript exceeded its 600 kB / gzip 200 kB budget");
+if (entry.raw > 450_000) throw new Error("Shared entry JavaScript exceeded its 450 kB budget");
 for (const { file } of Object.values(manifest)) {
 	if (file.endsWith(".js") && readFileSync(resolve(root, file)).length > 500_000) {
 		throw new Error(`JavaScript chunk exceeded 500 kB: ${file}`);

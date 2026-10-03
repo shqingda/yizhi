@@ -27,6 +27,7 @@ export function AwardsForm({ resume, setResume }: FormProps) {
 				>
 					<div className="mb-2 flex justify-end">
 						<ListControls
+ label={item.title || `奖项 ${index + 1}`}
 							index={index}
 							total={resume.awards.length}
 							onMove={(from, to) => patch(setResume, "awards", moveItem(resume.awards, from, to))}

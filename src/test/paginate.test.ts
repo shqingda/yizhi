@@ -10,6 +10,11 @@ function keep(id: string, height: number): PaginateBlock {
 }
 
 describe("peekHeight", () => {
+	it("keeps the section heading, entry header and first bullet together", () => {
+		const blocks = [unit("prior", 75), keep("section", 10), keep("entry", 10), unit("bullet", 20)];
+		expect(peekHeight(blocks, 1)).toBe(40);
+		expect(paginateBlocks(blocks, 100).breaks).toEqual([{ afterId: "prior", height: 25 }]);
+	});
 	it("adds the next block when the current one is keep-with-next", () => {
 		const blocks = [keep("h", 10), unit("e", 40)];
 		expect(peekHeight(blocks, 0)).toBe(50);

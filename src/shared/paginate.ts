@@ -1,4 +1,4 @@
-export type PaginateKind = "unit" | "keep";
+type PaginateKind = "unit" | "keep";
 
 export interface PaginateBlock {
 	id: string;
@@ -11,7 +11,7 @@ export interface PageBreak {
 	height: number;
 }
 
-export interface PaginateResult {
+interface PaginateResult {
 	pageCount: number;
 	breaks: PageBreak[];
 	lastPageUsed: number;
@@ -23,10 +23,9 @@ const EPS = 0.5;
 export function peekHeight(blocks: readonly PaginateBlock[], index: number): number {
 	const block = blocks[index];
 	if (!block) return 0;
-	if (block.kind === "keep" && blocks[index + 1]) {
-		return block.height + blocks[index + 1].height;
-	}
-	return block.height;
+	let height = block.height;
+	while (blocks[index]?.kind === "keep" && blocks[index + 1]) height += blocks[++index].height;
+	return height;
 }
 
 /**

@@ -1,9 +1,9 @@
 import { isResumeLike, normalizeResume, type Resume, uid } from "@shared/schema";
-import { readLocalValue, STORAGE_KEY } from "./storage";
+import { STORAGE_KEY } from "./storage";
 
 export const WORKSPACE_KEY = "yizhi:workspace:v2";
 const BACKUP_LIMIT = 2 * 1024 * 1024;
-export interface RecoveryPoint {
+interface RecoveryPoint {
 	id: string;
 	label: string;
 	time: string;
@@ -25,8 +25,7 @@ export function createDraft(data: Resume, name = "未命名简历"): Draft {
 	const id = uid("draft");
 	return { id, name, updatedAt: null, data: structuredClone(data), backups: [] };
 }
-export function loadWorkspace(): Workspace | null {
-	const raw = localStorage.getItem(WORKSPACE_KEY);
+export function loadWorkspace(raw = localStorage.getItem(WORKSPACE_KEY)): Workspace | null {
 	if (raw !== null) {
 		const value = JSON.parse(raw) as Workspace;
 		if (
@@ -68,7 +67,7 @@ export function loadWorkspace(): Workspace | null {
 			})),
 		};
 	}
-	const legacy = readLocalValue(STORAGE_KEY);
+	const legacy = localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem("resume-studio:draft");
 	if (legacy === null) return null;
 	const parsed: unknown = JSON.parse(legacy);
 	if (!isResumeLike(parsed)) throw new Error("旧草稿格式无法读取，请保留浏览器数据。");
@@ -76,11 +75,23 @@ export function loadWorkspace(): Workspace | null {
 	const draft = createDraft(data, data.basics.name ? `${data.basics.name}的简历` : "未命名简历");
 	return { version: 2, activeId: draft.id, drafts: [draft] };
 }
-export function saveWorkspace(workspace: Workspace) {
+export class WorkspaceConflictError extends Error {
+	constructor() {
+		super("其他页面已更新或清除了本机草稿，已暂停保存。请先下载当前稿 JSON，再刷新读取最新内容。");
+		this.name = "WorkspaceConflictError";
+	}
+}
+
+export function saveWorkspace(workspace: Workspace, expectedSnapshot?: string | null) {
 	if (JSON.stringify(workspace.drafts.flatMap((d) => d.backups)).length * 2 > BACKUP_LIMIT)
 		throw new Error("恢复点容量已满，请下载并删除旧恢复点");
+	const raw = JSON.stringify(workspace);
+	const current = localStorage.getItem(WORKSPACE_KEY);
+	if (expectedSnapshot !== undefined && current !== expectedSnapshot)
+		throw new WorkspaceConflictError();
 	// One atomic write keeps the active pointer, drafts and recovery points together.
-	localStorage.setItem(WORKSPACE_KEY, JSON.stringify(workspace));
+	if (current !== raw) localStorage.setItem(WORKSPACE_KEY, raw);
+	return raw;
 }
 export function withBackup(workspace: Workspace, id: string, label: string): Workspace {
 	const next = {

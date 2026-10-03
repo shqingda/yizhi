@@ -27,6 +27,7 @@ export function ProjectsForm({ resume, setResume }: FormProps) {
 				>
 					<div className="mb-2 flex justify-end">
 						<ListControls
+ label={item.name || `项目经历 ${index + 1}`}
 							index={index}
 							total={resume.projects.length}
 							onMove={(from, to) => patch(setResume, "projects", moveItem(resume.projects, from, to))}

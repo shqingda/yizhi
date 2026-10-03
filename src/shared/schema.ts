@@ -26,8 +26,8 @@ export type HeaderAlign = "left" | "center" | "right";
 
 export type SectionKey = (typeof SECTION_KEYS)[number];
 
-export const IDENTITY_FIELD_KEYS = ["name", "label"] as const;
-export const CONTACT_FIELD_KEYS = [
+const IDENTITY_FIELD_KEYS = ["name", "label"] as const;
+const CONTACT_FIELD_KEYS = [
 	"email",
 	"phone",
 	"location",
@@ -35,13 +35,12 @@ export const CONTACT_FIELD_KEYS = [
 	"birthday",
 	"status",
 ] as const;
-export const BASICS_FIELD_KEYS = [...IDENTITY_FIELD_KEYS, ...CONTACT_FIELD_KEYS] as const;
+const BASICS_FIELD_KEYS = [...IDENTITY_FIELD_KEYS, ...CONTACT_FIELD_KEYS] as const;
 
-export type IdentityFieldKey = (typeof IDENTITY_FIELD_KEYS)[number];
 export type ContactFieldKey = (typeof CONTACT_FIELD_KEYS)[number];
 export type BasicsFieldKey = (typeof BASICS_FIELD_KEYS)[number];
 
-export interface ResumeBasics {
+interface ResumeBasics {
 	name: string;
 	label: string;
 	email?: string;
@@ -55,13 +54,13 @@ export interface ResumeBasics {
 	photo?: string;
 }
 
-export interface SkillGroup {
+interface SkillGroup {
 	id: string;
 	name: string;
 	keywords: string;
 }
 
-export interface ExperienceItem {
+interface ExperienceItem {
 	id: string;
 	company: string;
 	position: string;
@@ -71,7 +70,7 @@ export interface ExperienceItem {
 	highlights: string[];
 }
 
-export interface ProjectItem {
+interface ProjectItem {
 	id: string;
 	name: string;
 	role?: string;
@@ -81,7 +80,7 @@ export interface ProjectItem {
 	highlights: string[];
 }
 
-export interface EducationItem {
+interface EducationItem {
 	id: string;
 	institution: string;
 	area?: string;
@@ -92,7 +91,7 @@ export interface EducationItem {
 	highlights: string[];
 }
 
-export interface AwardItem {
+interface AwardItem {
 	id: string;
 	title: string;
 	date?: string;
@@ -100,7 +99,7 @@ export interface AwardItem {
 	summary?: string;
 }
 
-export interface PublicationItem {
+interface PublicationItem {
 	id: string;
 	name: string;
 	publisher?: string;
@@ -109,13 +108,13 @@ export interface PublicationItem {
 	summary?: string;
 }
 
-export interface LanguageItem {
+interface LanguageItem {
 	id: string;
 	language: string;
 	fluency?: string;
 }
 
-export interface CustomEntry {
+interface CustomEntry {
 	id: string;
 	title: string;
 	subtitle?: string;
@@ -123,13 +122,13 @@ export interface CustomEntry {
 	highlights: string[];
 }
 
-export interface CustomSection {
+interface CustomSection {
 	id: string;
 	title: string;
 	items: CustomEntry[];
 }
 
-export interface ResumeMeta {
+interface ResumeMeta {
 	accentColor: string;
 	fontScale: number;
 	showPhoto: boolean;

@@ -22,10 +22,11 @@ export function CustomSectionsForm({ resume, setResume }: FormProps) {
 	return (
 		<div className="grid gap-3">
 			{resume.customSections.map((section) => (
-				<div key={section.id} className="rounded-xl border border-black/8 bg-card p-3">
+				<div key={section.id} data-editor-entry className="rounded-xl border border-black/8 bg-card p-3">
 					<p className="mb-1.5 text-sm font-medium text-foreground">区块标题</p>
 					<div className="flex items-center gap-2">
 						<Input
+							data-entry-focus
 							className="min-w-0 flex-1"
 							value={section.title}
 							aria-label="自定义区块名称"
@@ -38,7 +39,7 @@ export function CustomSectionsForm({ resume, setResume }: FormProps) {
 							}
 						/>
 						<IconButton
-							label="删除区块"
+							label={`删除${section.title || "自定义区块"}`}
 							onClick={() =>
 								patch(
 									setResume,
@@ -52,9 +53,10 @@ export function CustomSectionsForm({ resume, setResume }: FormProps) {
 					</div>
 					<div className="mt-3 grid gap-2">
 						{section.items.map((item) => (
-							<div key={item.id} className="rounded-lg bg-muted p-2.5">
+							<div key={item.id} data-editor-entry className="rounded-lg bg-muted p-2.5">
 								<div className="flex items-center gap-2">
 									<Input
+										data-entry-focus
 										className="min-w-0 flex-1 bg-card"
 										value={item.title}
 										aria-label="自定义条目标题"
@@ -69,7 +71,7 @@ export function CustomSectionsForm({ resume, setResume }: FormProps) {
 										}
 									/>
 									<IconButton
-										label="删除条目"
+										label={`删除${item.title || "自定义条目"}`}
 										onClick={() =>
 											updateCustomSection(setResume, resume, section.id, (row) => ({
 												...row,

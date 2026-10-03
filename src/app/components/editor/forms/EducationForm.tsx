@@ -28,6 +28,7 @@ export function EducationForm({ resume, setResume }: FormProps) {
 				>
 					<div className="mb-2 flex justify-end">
 						<ListControls
+ label={item.institution || `教育经历 ${index + 1}`}
 							index={index}
 							total={resume.education.length}
 							onMove={(from, to) => patch(setResume, "education", moveItem(resume.education, from, to))}

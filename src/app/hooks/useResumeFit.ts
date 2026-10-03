@@ -1,9 +1,9 @@
 import { useLayoutEffect, useState, type RefObject } from "react";
-import { paginateBlocks, type PaginateBlock, type PageBreak } from "@shared/paginate";
+import { paginateBlocks } from "@shared/paginate";
 import type { LayoutMode, Resume } from "@shared/schema";
+import { clearPageBreaks, measureResumeBlocks, placePageBreaks } from "@/lib/resumePagination";
 
 const PAGE_RATIO = 297 / 210;
-const SPACER_CLASS = "resume-page-spacer";
 
 export interface ResumeLayoutInfo {
 	pageCount: number;
@@ -14,42 +14,6 @@ export interface ResumeLayoutInfo {
 function parsePx(value: string) {
 	const n = Number.parseFloat(value);
 	return Number.isFinite(n) ? n : 0;
-}
-
-function clearSpacers(inner: HTMLElement) {
-	inner.querySelectorAll(`.${SPACER_CLASS}`).forEach((node) => node.remove());
-}
-
-function applySpacers(inner: HTMLElement, breaks: readonly PageBreak[]) {
-	clearSpacers(inner);
-	for (const item of breaks) {
-		const el = inner.querySelector(`[data-block-id="${CSS.escape(item.afterId)}"]`);
-		if (!el) continue;
-		const spacer = document.createElement("div");
-		spacer.className = SPACER_CLASS;
-		spacer.setAttribute("aria-hidden", "true");
-		spacer.style.height = `${Math.max(0, item.height)}px`;
-		el.after(spacer);
-	}
-}
-
-function measureBlocks(inner: HTMLElement): PaginateBlock[] {
-	return [...inner.querySelectorAll<HTMLElement>("[data-block-id]")]
-		.map((node) => {
-			const style = getComputedStyle(node);
-			let height = node.offsetHeight + parsePx(style.marginTop) + parsePx(style.marginBottom);
-			const parent = node.parentElement;
-			if (parent?.classList.contains("resume-section") && parent.firstElementChild === node) {
-				const parentStyle = getComputedStyle(parent);
-				height += parsePx(parentStyle.marginTop) + parsePx(parentStyle.marginBottom);
-			}
-			return {
-				id: node.dataset.blockId ?? "",
-				height,
-				kind: node.dataset.blockKind === "keep" ? "keep" : "unit",
-			} satisfies PaginateBlock;
-		})
-		.filter((block) => block.id);
 }
 
 export function useResumeFit(
@@ -73,7 +37,9 @@ export function useResumeFit(
 			sheet.style.setProperty("--resume-type-fit", typeFit.toFixed(4));
 		};
 
-		const pageHeight = () => Math.max(1, sheet.clientWidth * PAGE_RATIO);
+		const sheetWidth = () => parsePx(getComputedStyle(sheet).width) || sheet.clientWidth;
+		const pageHeight = () => Math.max(1, sheetWidth() * PAGE_RATIO);
+		const scale = () => sheet.getBoundingClientRect().width / sheetWidth() || 1;
 
 		const contentBox = () => {
 			const style = getComputedStyle(sheet);
@@ -96,16 +62,17 @@ export function useResumeFit(
 		};
 
 		const pack = () => {
-			clearSpacers(inner);
+			clearPageBreaks(inner);
 			void inner.offsetHeight;
-			return paginateBlocks(measureBlocks(inner), contentBox());
+			return paginateBlocks(measureResumeBlocks(inner, contentBox(), scale()), contentBox());
 		};
 
 		const run = () => {
 			if (cancelled || !sheet.isConnected || sheet.clientWidth === 0) return;
 
 			if (mode === "single") {
-				clearSpacers(inner);
+				clearPageBreaks(inner);
+				inner.querySelectorAll("[data-oversized]").forEach(node => node.removeAttribute("data-oversized"));
 				apply(1, 1);
 				void inner.offsetHeight;
 				setInfo({ pageCount: 1, height: sheet.scrollHeight });
@@ -113,7 +80,6 @@ export function useResumeFit(
 			}
 
 			const box = contentBox();
-			if (box <= 0) return;
 
 			apply(1, 1);
 			let result = pack();
@@ -133,13 +99,13 @@ export function useResumeFit(
 				}
 			}
 
-			for (const node of inner.querySelectorAll<HTMLElement>("[data-block-id]"))
-				node.toggleAttribute("data-oversized", node.offsetHeight > box);
-			applySpacers(inner, result.breaks);
+			const blocks = measureResumeBlocks(inner, box, scale());
+			placePageBreaks(inner, blocks, result.breaks, pageHeight() - box, scale());
+			sheet.style.setProperty("--resume-page-count", String(result.pageCount));
 			setInfo({
 				pageCount: result.pageCount,
 				height: Math.max(result.pageCount * pageHeight(), sheet.scrollHeight),
-				overflow: measureBlocks(inner).some((block) => block.height > box),
+				overflow: !!inner.querySelector("[data-oversized]"),
 			});
 		};
 

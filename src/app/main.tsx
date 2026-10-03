@@ -1,4 +1,4 @@
-import { initializeTheme } from "./components/ThemeMenu";
+import { initializeTheme } from "./lib/theme";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";

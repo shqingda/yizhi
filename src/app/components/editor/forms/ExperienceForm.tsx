@@ -28,6 +28,7 @@ export function ExperienceForm({ resume, setResume }: FormProps) {
 				>
 					<div className="mb-2 flex justify-end">
 						<ListControls
+ label={item.company || `工作经历 ${index + 1}`}
 							index={index}
 							total={resume.experience.length}
 							onMove={(from, to) => patch(setResume, "experience", moveItem(resume.experience, from, to))}

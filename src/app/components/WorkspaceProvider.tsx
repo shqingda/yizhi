@@ -3,32 +3,37 @@ import { useResume } from "@/hooks/useResume";
 import { initializeWorkspace, type InitialWorkspace } from "@/lib/initializeWorkspace";
 
 import { WorkspaceContext } from "@/hooks/useWorkspace";
+import { WorkspaceLease } from "@/lib/workspaceLease";
 
-function ReadyWorkspace({ initial, children }: { initial: InitialWorkspace; children: ReactNode }) {
-	const model = useResume(initial);
+function ReadyWorkspace({ initial, lease, children }: { initial: InitialWorkspace; lease: WorkspaceLease; children: ReactNode }) {
+	const model = useResume(initial, lease);
 	return <WorkspaceContext.Provider value={model}>{children}</WorkspaceContext.Provider>;
 }
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
-	const [initial, setInitial] = useState<InitialWorkspace | null>(null);
+	const [ready, setReady] = useState<{ initial: InitialWorkspace; lease: WorkspaceLease } | null>(null);
 	const [error, setError] = useState(false);
 	const [attempt, setAttempt] = useState(0);
 	useEffect(() => {
 		let cancelled = false;
+		const lease = new WorkspaceLease();
 		setError(false);
-		initializeWorkspace().then(
+		lease.acquire().then(() => initializeWorkspace()).then(
 			(value) => {
-				if (!cancelled) setInitial(value);
+				if (!cancelled) setReady({ initial: value, lease });
+				else lease.release();
 			},
 			() => {
+				lease.release();
 				if (!cancelled) setError(true);
 			},
 		);
 		return () => {
 			cancelled = true;
+			lease.release();
 		};
 	}, [attempt]);
-	if (initial) return <ReadyWorkspace initial={initial}>{children}</ReadyWorkspace>;
+	if (ready) return <ReadyWorkspace {...ready}>{children}</ReadyWorkspace>;
 	return (
 		<div className="grid min-h-screen place-content-center gap-4 px-6 text-center">
 			<p role={error ? "alert" : "status"}>

@@ -1,7 +1,41 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createSharePdf, exportResumePdf, waitForPrintStyles } from "@/lib/exportResume";
 
 describe("exportResumePdf", () => {
+	it("prints explicit page starts in an isolated copy and cleans it up after print", async () => {
+		const source = document.createElement("article");
+		source.className = "resume-print-root";
+		source.innerHTML = '<ul><li>First</li><li class="resume-page-spacer" aria-hidden="true" style="height:120px"></li><li data-page-start>Second</li></ul>';
+		document.body.append(source);
+		const print = vi.fn();
+		const append = document.body.appendChild.bind(document.body);
+		const spy = vi.spyOn(document.body, "appendChild").mockImplementation(node => {
+			const result = append(node);
+			if (node instanceof HTMLIFrameElement) {
+				node.contentWindow!.focus = vi.fn();
+				node.contentWindow!.print = print;
+			}
+			return result;
+		});
+		vi.useFakeTimers();
+		vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => { callback(0); return 0; });
+		try {
+			await exportResumePdf("multi", "test.pdf", source);
+			expect(print).toHaveBeenCalledOnce();
+			const frame = document.querySelector("iframe")!;
+			expect(frame.contentDocument!.querySelector("[data-page-start]")?.textContent).toBe("Second");
+			const styles = frame.contentDocument!.querySelector("style")!.textContent;
+			expect(styles).toContain("break-before: page");
+			expect(styles).toMatch(/resume-page-spacer\s*\{\s*display: none/);
+			frame.contentWindow!.dispatchEvent(new Event("afterprint"));
+			expect(frame.isConnected).toBe(false);
+			expect(source.isConnected).toBe(true);
+			expect(source.querySelectorAll("li")).toHaveLength(3);
+		} finally {
+			document.querySelector("iframe")?.remove(); source.remove();
+			spy.mockRestore(); vi.clearAllTimers(); vi.unstubAllGlobals(); vi.useRealTimers();
+		}
+	});
 	it("throws when the preview root is missing", async () => {
 		await expect(exportResumePdf("multi", "resume.pdf")).rejects.toThrow("未找到简历预览");
 		await expect(exportResumePdf("single", "resume.pdf")).rejects.toThrow("未找到简历预览");

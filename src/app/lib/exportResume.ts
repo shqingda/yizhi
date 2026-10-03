@@ -60,14 +60,15 @@ function copyDocumentStyles(target: Document) {
 			transform: none !important;
 		}
 		.resume-sheet::after { display: none !important; }
-		.resume-heading { break-after: avoid; page-break-after: avoid; }
-		.resume-entry, .resume-skill { break-inside: avoid; page-break-inside: avoid; }
+		.resume-heading, .resume-entry-head { break-after: avoid; page-break-after: avoid; }
+		.resume-entry, .resume-skill, .resume-bullets > li { break-inside: avoid; page-break-inside: avoid; }
 		.resume-entry[data-oversized] { break-inside:auto; page-break-inside:auto; }
 		.resume-page-spacer {
-			height: 0 !important;
-			margin: 0 !important;
-			break-after: page;
-			page-break-after: always;
+			display: none !important;
+		}
+		[data-page-start] {
+			break-before: page;
+			page-break-before: always;
 		}
 	`;
 	target.head.appendChild(printStyle);
@@ -118,16 +119,15 @@ export async function createSharePdf(dataUrl: string, width: number, height: num
 	pdf.addImage(dataUrl, "PNG", 0, 0, A4_WIDTH_MM, height / width * A4_WIDTH_MM, undefined, "FAST");
 	return pdf;
 }
-export async function exportShareImagePdf(filename: string) {
-	const dataUrl = await snapshotSheet(resumeRoot());
+async function exportShareImagePdf(filename: string, source: HTMLElement) {
+	const dataUrl = await snapshotSheet(source);
 	const img = new Image(); img.src = dataUrl; await img.decode();
 	const pdf = await createSharePdf(dataUrl, img.width, img.height);
 	pdf.save(filename);
 }
 
 /** A4 投递：隔离文档打印，不含编辑器阴影和缩放层。 */
-export async function exportPrintablePdf(filename = "简历.pdf") {
-	const source = resumeRoot();
+async function exportPrintablePdf(filename: string, source: HTMLElement) {
 	await document.fonts?.ready;
 	await waitForImages(source);
 
@@ -179,10 +179,14 @@ export async function exportPrintablePdf(filename = "简历.pdf") {
 	} catch (error) { iframe.remove(); throw error; }
 }
 
-export async function exportResumePdf(mode: "single" | "multi", filename: string) {
+export async function exportResumePdf(mode: "single" | "multi", filename: string, source: HTMLElement = resumeRoot()) {
+	await document.fonts?.ready;
+	await waitForImages(source);
+	// Allow the temporary document to finish pagination after fonts and photos load.
+	await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
 	if (mode === "single") {
-		await exportShareImagePdf(filename);
+		await exportShareImagePdf(filename, source);
 		return;
 	}
-	await exportPrintablePdf(filename);
+	await exportPrintablePdf(filename, source);
 }

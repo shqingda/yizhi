@@ -1,3 +1,5 @@
+import { PreviewPage } from "./PreviewPage";
+import { ExportDialog } from "@/components/ExportDialog";
 import { ThemeMenu } from "@/components/ThemeMenu";
 import { useNavigate } from "react-router-dom";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -54,6 +56,11 @@ const TABS: { id: EditorTab; label: string }[] = [
 const A4_PX = (210 * 96) / 25.4;
 
 export function EditorPage() {
+	const model = useWorkspace();
+	return model.canEdit ? <EditableEditor /> : <PreviewPage />;
+}
+
+function EditableEditor() {
 	const model = useWorkspace();
 	const navigate = useNavigate();
 	const lastContentTab = useRef<EditorTab>("basics");
@@ -141,7 +148,7 @@ export function EditorPage() {
 		positions.current = {};
 		setPreview(false);
 	}, [model.activeId]);
-	const props = { resume, setResume: (updater: (current: Resume) => Resume) => setResume(updater) };
+	const props = { disabled: !model.canEdit, resume, setResume: (updater: (current: Resume) => Resume) => setResume(updater) };
 	const readFile = async (file: File) => {
 		try {
 			if (file.size > 5 * 1024 * 1024) throw new Error("备份大于 5 MB，请先压缩照片后再导入");
@@ -153,7 +160,9 @@ export function EditorPage() {
 			toast.error(error instanceof Error ? error.message : "无法读取文件");
 		}
 	};
-	const localLabel = model.localError ? "本机保存失败" : model.localPending ? "保存中…" : "已保存到本机";
+	const localLabel = model.localConflict ? "保存已暂停" : model.localError ? "本机保存失败" : model.localPending ? "保存中…" : "已保存到本机";
+	const downloadCurrentJson = () =>
+		downloadJson(resume, `${cleanFilename(pdfFilename(resume)).replace(/\.pdf$/, "")}.json`);
 	const newSection = () => {
 		selectTab("custom");
 		if (!resume.customSections.length)
@@ -186,7 +195,7 @@ export function EditorPage() {
 						>
 							<PanelLeft />
 						</Button>
-						<strong className="editor-brand shrink-0 text-[15px]">一纸简历</strong>
+						<strong className="editor-brand shrink-0 text-[length:var(--ui-title)]">一纸简历</strong>
 						<div className="editor-mode-tabs" role="tablist" aria-label="工作区模式">
 							{[
 								{ preview: false, label: "编辑模式", icon: Pencil },
@@ -196,6 +205,7 @@ export function EditorPage() {
 									key={item.label}
 									type="button"
 									role="tab"
+ aria-label={item.label}
 									aria-selected={preview === item.preview}
 									tabIndex={preview === item.preview ? 0 : -1}
 									onClick={() => changeMode(item.preview)}
@@ -211,7 +221,7 @@ export function EditorPage() {
 									}}
 								>
 									<item.icon />
-									{item.label}
+									<span className="mode-label-full">{item.label}</span><span className="mode-label-short" aria-hidden="true">{item.preview ? "预览" : "编辑"}</span>
 								</button>
 							))}
 						</div>
@@ -268,6 +278,7 @@ export function EditorPage() {
 							<Button
 								size="sm"
 								variant="outline"
+								className="web-preview-button"
 								aria-label="网页预览"
 								title="网页预览"
 								onClick={openWebPreview}
@@ -292,26 +303,18 @@ export function EditorPage() {
 									)}
 								</DropdownMenuTrigger>
 								<DropdownMenuContent align="end" className="editor-more-menu w-64">
+									<DropdownMenuItem className="compact-web-preview" onClick={openWebPreview}><ExternalLink />网页预览</DropdownMenuItem>
 									<div className="px-1.5 pb-1 text-xs text-muted-foreground" role="status">
 										{localLabel}
 									</div>
-									{model.localError && (
-										<p role="alert" className="px-1.5 text-xs text-red-700 dark:text-red-300">
-											{model.localError}
-										</p>
-									)}
 									<DropdownMenuSeparator />
-									{model.localError && (
+									{model.localError && !model.localConflict && (
 										<DropdownMenuItem onClick={() => model.flushLocal()}>
 											<Save />
 											重试本机保存
 										</DropdownMenuItem>
 									)}
-									<DropdownMenuItem
-										onClick={() =>
-											downloadJson(resume, `${cleanFilename(pdfFilename(resume)).replace(/\.pdf$/, "")}.json`)
-										}
-									>
+									<DropdownMenuItem onClick={downloadCurrentJson}>
 										<Download />
 										导出 JSON
 									</DropdownMenuItem>
@@ -351,7 +354,20 @@ export function EditorPage() {
 							</DropdownMenu>
 						</div>
 					</div>
+					<div className="workspace-status-row">
+						<strong className="workspace-name">{model.drafts.find(d => d.id === model.activeId)!.name}</strong>
+						<span role="status" className="save-status" data-error={!!model.localError}>{localLabel}</span>
+					</div>
 				</header>
+				{model.localError && (
+					<div className="save-notice no-print">
+						<p role="alert">{model.localError}</p>
+						<Button size="sm" variant="outline" onClick={downloadCurrentJson}>下载当前稿 JSON</Button>
+						{!model.localConflict && (
+							<Button size="sm" variant="outline" onClick={() => model.flushLocal()}>重试保存</Button>
+						)}
+					</div>
+				)}
 				<div className="studio-main">
 					<aside
 						className="studio-sidebar no-print"
@@ -367,7 +383,7 @@ export function EditorPage() {
 										aria-current={tab === item.id ? "page" : undefined}
 										onClick={() => (item.id === "custom" ? newSection() : selectTab(item.id))}
 										className={cn(
-											"pressable inline-flex items-center gap-0.5 whitespace-nowrap rounded-full px-2.5 py-1 text-[13px] transition-colors duration-100",
+											"pressable inline-flex items-center gap-0.5 whitespace-nowrap rounded-full px-2.5 py-1 text-[length:var(--ui-small)] transition-colors duration-100",
 											tab === item.id
 												? "bg-primary font-medium text-primary-foreground"
 												: "text-muted-foreground hover:bg-card hover:text-foreground",
@@ -378,7 +394,7 @@ export function EditorPage() {
 												item.id !== "theme" &&
 												resume.meta.hiddenSections.includes(item.id) &&
 												tab !== item.id &&
-												"opacity-40",
+												"underline decoration-dotted underline-offset-4",
 										)}
 									>
 										{item.id === "custom" && <Plus className="size-3" />}
@@ -387,7 +403,7 @@ export function EditorPage() {
 								))}
 							</nav>
 							<section ref={formRef} className="studio-sidebar-form">
-								<h2 className="mb-3 text-[15px] font-semibold">
+								<h2 className="mb-3 text-[length:var(--ui-title)] font-semibold">
 									{tab === "theme" ? "版式" : TABS.find((t) => t.id === tab)?.label}
 								</h2>
 								{tab !== "basics" && tab !== "theme" && resume.meta.hiddenSections.includes(tab) && (
@@ -406,7 +422,7 @@ export function EditorPage() {
 										</button>
 									</p>
 								)}
-								<EditorForm tab={tab} {...props} />
+								<EditorForm key={model.activeId} tab={tab} {...props} />
 							</section>
 							<div className="studio-sidebar-footer">
 								<button
@@ -414,7 +430,7 @@ export function EditorPage() {
 									aria-pressed={tab === "theme"}
 									onClick={() => selectTab(tab === "theme" ? lastContentTab.current : "theme")}
 									className={cn(
-										"pressable flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-[13px] transition-colors",
+										"pressable flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-[length:var(--ui-small)] transition-colors",
 										tab === "theme"
 											? "bg-primary font-medium text-primary-foreground hover:bg-primary/90"
 											: "bg-card text-foreground hover:bg-muted hover:shadow-sm",
@@ -505,14 +521,12 @@ export function EditorPage() {
 					}}
 				/>
 			</div>
-			{panel && (
+			{panel === "export" && <ExportDialog resume={resume} onClose={() => setPanel(null)} />}
+			{panel && panel !== "export" && (
 				<EditorDialog
 					key={panel}
 					panel={panel}
 					imported={imported}
-					preview={preview}
-					overflow={layout.overflow}
-					onPreviewChange={setPreview}
 					onClose={() => setPanel(null)}
 				/>
 			)}

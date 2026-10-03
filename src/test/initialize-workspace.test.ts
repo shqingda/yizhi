@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createDraft, saveWorkspace, WORKSPACE_KEY } from "@/lib/draftStore";
+import { createDraft, saveWorkspace, WORKSPACE_KEY, WorkspaceConflictError } from "@/lib/draftStore";
 import { SAMPLE_RESUME } from "./fixtures";
 
 beforeEach(() => {
@@ -13,6 +13,20 @@ afterEach(() => {
 });
 
 describe("workspace initialization and deferred sample loading", () => {
+	it("does not replace a draft created elsewhere during the sample download", async () => {
+		let finish!: (response: Response) => void;
+		vi.stubGlobal("fetch", vi.fn(() => new Promise<Response>((resolve) => { finish = resolve; })));
+		const { initializeWorkspace } = await import("@/lib/initializeWorkspace");
+		const waiting = initializeWorkspace();
+		const draft = createDraft(SAMPLE_RESUME, "Created elsewhere");
+		const external = { version: 2 as const, activeId: draft.id, drafts: [draft] };
+		const raw = saveWorkspace(external);
+		finish(Response.json(SAMPLE_RESUME));
+		const result = await waiting;
+		expect(result.storageSnapshot).toBeNull();
+		expect(() => saveWorkspace(result.workspace, result.storageSnapshot)).toThrow(WorkspaceConflictError);
+		expect(localStorage.getItem(WORKSPACE_KEY)).toBe(raw);
+	});
 	it("opens saved drafts without downloading the sample", async () => {
 		const draft = createDraft(SAMPLE_RESUME);
 		draft.data.basics.name = "Saved";

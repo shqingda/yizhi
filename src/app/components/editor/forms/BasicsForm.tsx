@@ -23,7 +23,7 @@ const CONTACT_FIELDS: {
 	{ id: "status", label: "状态", placeholder: "在职 / 离职 / 求职中", icon: UserRound },
 ];
 
-export function BasicsForm({ resume, setResume }: FormProps) {
+export function BasicsForm({ resume, setResume, disabled }: FormProps) {
 	const [contactHint, setContactHint] = useState("");
 	const basics = resume.basics;
 	const meta = resume.meta;
@@ -58,7 +58,7 @@ export function BasicsForm({ resume, setResume }: FormProps) {
 							)}
 						>
 							<AlignMark align={option.id} />
-							<span className="text-center text-[11px]">{option.label}</span>
+							<span className="text-center text-xs">{option.label}</span>
 						</button>
 					))}
 				</div>
@@ -103,8 +103,10 @@ export function BasicsForm({ resume, setResume }: FormProps) {
 			<div>
 				<p className="mb-2 text-sm font-medium text-foreground">联系信息</p>
 				<SortableList
+ disabled={disabled}
 					items={meta.basicsOrder}
 					getId={(key) => key}
+ getLabel={key => CONTACT_FIELDS.find(field => field.id === key)?.label ?? key}
 					onReorder={(basicsOrder) => patchMeta(setResume, { basicsOrder })}
 				>
 					{(key, { handle, dragging }) => {
@@ -116,7 +118,7 @@ export function BasicsForm({ resume, setResume }: FormProps) {
 								className={cn(
 									"flex items-center gap-1.5 rounded-xl border border-black/8 bg-card px-1.5 py-1",
 									dragging && "shadow-md",
-									!visible && "opacity-45",
+									!visible && "border-dashed",
 								)}
 							>
 								{handle}
@@ -140,7 +142,7 @@ export function BasicsForm({ resume, setResume }: FormProps) {
 									placeholder={field.placeholder}
 									onChange={(e) => update({ [key]: e.target.value })}
 								/>
-								<VisibilityToggle visible={visible} onToggle={() => toggleField(key)} />
+								<VisibilityToggle label={field.label} visible={visible} onToggle={() => toggleField(key)} />
 							</div>
 						);
 					}}
@@ -197,7 +199,7 @@ function BasicsFieldRow({
 		<div
 			className={cn(
 				"flex items-center gap-2 rounded-xl border border-black/8 bg-card px-3 py-1",
-				!visible && "opacity-45",
+				!visible && "border-dashed",
 			)}
 		>
 			<span className="w-10 shrink-0 text-xs text-muted-foreground">{label}</span>
@@ -207,7 +209,7 @@ function BasicsFieldRow({
 				value={value}
 				onChange={(e) => onChange(e.target.value)}
 			/>
-			<VisibilityToggle visible={visible} onToggle={onToggle} />
+			<VisibilityToggle label={label} visible={visible} onToggle={onToggle} />
 		</div>
 	);
 }

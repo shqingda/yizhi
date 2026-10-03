@@ -54,6 +54,7 @@ export function LanguagesForm({ resume, setResume }: FormProps) {
 						/>
 					</Field>
 					<ListControls
+ label={item.language || `语言 ${index + 1}`}
 						index={index}
 						total={resume.languages.length}
 						onMove={(from, to) => patch(setResume, "languages", moveItem(resume.languages, from, to))}

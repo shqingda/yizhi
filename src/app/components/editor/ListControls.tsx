@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useRef, useId, isValidElement, cl
 import { ArrowDown, ArrowUp, Eye, EyeOff, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { moveWithFocus, removeWithFocus } from "@/lib/editorFocus";
 
 export const EditorActions = createContext({ remove: (action: () => void) => action() });
 
@@ -28,7 +29,7 @@ export function IconButton({
 				className,
 			)}
 			{...props}
-			onClick={event => { if (label.startsWith("删除")) remove(() => props.onClick?.(event)); else props.onClick?.(event); }}
+			onClick={event => { if (label.startsWith("删除")) removeWithFocus(event.currentTarget, () => remove(() => props.onClick?.(event))); else props.onClick?.(event); }}
 		>
 			{children}
 		</button>
@@ -38,27 +39,27 @@ export function IconButton({
 export function VisibilityToggle({
 	visible,
 	onToggle,
-	labelOn = "隐藏",
-	labelOff = "显示",
+	label,
 }: {
 	visible: boolean;
 	onToggle: () => void;
-	labelOn?: string;
-	labelOff?: string;
+	label: string;
 }) {
 	return (
-		<IconButton label={visible ? labelOn : labelOff} pressed={!visible} onClick={onToggle}>
+		<IconButton label={`${visible ? "隐藏" : "显示"}${label}`} pressed={!visible} onClick={onToggle}>
 			{visible ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
 		</IconButton>
 	);
 }
 
 export function ListControls({
+	label,
 	index,
 	total,
 	onMove,
 	onRemove,
 }: {
+	label: string;
 	index: number;
 	total: number;
 	onMove: (from: number, to: number) => void;
@@ -67,19 +68,19 @@ export function ListControls({
 	const { remove } = useContext(EditorActions);
 	return (
 		<div className="flex items-center gap-1">
-			<Button type="button" variant="ghost" size="icon" aria-label="上移条目" title="上移" disabled={index === 0} onClick={() => onMove(index, index - 1)}>
+			<Button type="button" variant="ghost" size="icon" aria-label={`上移${label}`} title="上移" disabled={index === 0} onClick={event => moveWithFocus(event.currentTarget, () => onMove(index, index - 1))}>
 				<ArrowUp />
 			</Button>
 			<Button
 				type="button"
 				variant="ghost"
 				size="icon"
-				aria-label="下移条目" title="下移" disabled={index === total - 1}
-				onClick={() => onMove(index, index + 1)}
+				aria-label={`下移${label}`} title="下移" disabled={index === total - 1}
+				onClick={event => moveWithFocus(event.currentTarget, () => onMove(index, index + 1))}
 			>
 				<ArrowDown />
 			</Button>
-			<Button type="button" variant="ghost" size="icon" aria-label="删除条目" title="删除" onClick={() => remove(onRemove)}>
+			<Button type="button" variant="ghost" size="icon" aria-label={`删除${label}`} title="删除" onClick={event => removeWithFocus(event.currentTarget, () => remove(onRemove))}>
 				<Trash2 />
 			</Button>
 		</div>
@@ -123,9 +124,9 @@ export function EntryCard({ title, onCopy, children }: { title: string; onCopy: 
 	useEffect(() => {
 		if (!title) { ref.current?.scrollIntoView?.({ block: "nearest" }); ref.current?.querySelector<HTMLInputElement>("input")?.focus(); }
 	}, []);
-	return <details ref={ref} open className="editor-entry min-w-0 rounded-xl border border-black/8 bg-card p-3">
+	return <details ref={ref} open data-editor-entry className="editor-entry min-w-0 rounded-xl border border-black/8 bg-card p-3">
 		<summary className="mb-3 cursor-pointer text-sm font-medium leading-6 [overflow-wrap:anywhere]">{title || "新增条目"}</summary>
-		<button type="button" onClick={onCopy} className="float-left mb-2 rounded px-2 py-1 text-xs text-muted-foreground hover:bg-secondary">复制此条目</button>
+		<button type="button" aria-label={`复制${title || "新增条目"}`} onClick={onCopy} className="float-left mb-2 rounded px-2 py-1 text-xs text-muted-foreground hover:bg-secondary">复制此条目</button>
 		{children}
 	</details>;
 }

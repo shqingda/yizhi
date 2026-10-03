@@ -15,7 +15,7 @@ const SECTION_LABELS: Record<SectionKey, string> = {
 	custom: "自定义",
 };
 
-export function ThemeForm({ resume, setResume }: FormProps) {
+export function ThemeForm({ resume, setResume, disabled }: FormProps) {
 	const meta = resume.meta;
 	const layoutMode = meta.layoutMode === "multi" ? "multi" : "single";
 	return (
@@ -72,8 +72,10 @@ export function ThemeForm({ resume, setResume }: FormProps) {
 			<div>
 				<p className="mb-2 text-sm font-medium text-foreground">栏目顺序</p>
 				<SortableList
+ disabled={disabled}
 					items={meta.sectionOrder}
 					getId={(key) => key}
+ getLabel={key => SECTION_LABELS[key]}
 					onReorder={(sectionOrder) => patchMeta(setResume, { sectionOrder })}
 				>
 					{(key, { handle, dragging }) => {
@@ -83,12 +85,13 @@ export function ThemeForm({ resume, setResume }: FormProps) {
 								className={cn(
 									"flex items-center gap-1.5 rounded-xl border border-black/8 bg-card px-1.5 py-1",
 									dragging && "shadow-md",
-									hidden && "opacity-45",
+									hidden && "border-dashed",
 								)}
 							>
 								{handle}
-								<span className="min-w-0 flex-1 px-1 text-sm">{SECTION_LABELS[key] ?? key}</span>
+								<span className="min-w-0 flex-1 px-1 text-sm">{SECTION_LABELS[key] ?? key}{hidden && <span className="ml-2 text-xs text-muted-foreground">已隐藏</span>}</span>
 								<VisibilityToggle
+ label={SECTION_LABELS[key]}
 									visible={!hidden}
 									onToggle={() =>
 										patchMeta(setResume, {

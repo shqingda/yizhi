@@ -1,6 +1,7 @@
 import { act, cleanup, render } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
-import { initializeTheme, ThemeProvider } from "@/components/ThemeMenu";
+import { initializeTheme } from "@/lib/theme";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 afterEach(() => { cleanup(); localStorage.clear(); document.documentElement.classList.remove("dark"); document.documentElement.style.colorScheme = ""; vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 function media(dark: boolean) {

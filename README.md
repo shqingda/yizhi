@@ -3,7 +3,7 @@
 无需登录的在线简历编辑器。填写经历、调整版式，即时预览；草稿只保存在当前浏览器，支持 JSON 备份及 A4 / 长页 PDF 导出。
 
 - 本机多份简历：新建、命名、复制、切换、自动保存。
-- 修改保护：撤销重做、删除撤销、导入确认、最近 5 个恢复点。
+- 修改保护：一页编辑、其余页面只读同步，撤销重做、删除撤销、导入确认、最近 5 个恢复点。
 - 填写与排版：栏目排序和隐藏、经历复制折叠、日期辅助、照片裁剪压缩。
 - 阅读与导出：编辑 / 预览切换、缩放、A4 文字 PDF、长页图片 PDF。
 - 界面：手机布局、键盘操作、浅色 / 深色 / 跟随系统。
@@ -24,7 +24,7 @@ pnpm check       # 类型、测试、生产构建、包体积预算
 pnpm preview     # 构建并预览生产版本
 ```
 
-技术栈：React、TypeScript、Vite、Tailwind CSS、Base UI、Cloudflare Workers。PDF 使用浏览器打印，或按需加载 modern-screenshot 与 jsPDF。
+技术栈：React、TypeScript、Vite、Tailwind CSS、Base UI、Motion、Cloudflare Workers。PDF 使用浏览器打印，或按需加载 modern-screenshot 与 jsPDF。
 
 ## 文档
 
@@ -34,6 +34,9 @@ pnpm preview     # 构建并预览生产版本
 | 数据流、模块职责、存储与导出边界 | [技术架构](docs/architecture.md) |
 | 项目经历、面试介绍与技术追问 | [面试准备](docs/project-experience.md) |
 | 当前范围、已完成能力、剩余验收 | [体验与待办](docs/ux-plan.md) |
+| 最新执行结果、A4 预览修正与键盘焦点 | [分页与焦点复查](docs/qa/2026-10-03-pagination-focus.md) |
+| 编辑互斥、排序与导出回归 | [交互与可靠性验收](docs/qa/2026-10-03-interaction.md) |
+| 上一轮保存保护与长文本布局 | [保存与布局验收](docs/qa/2026-10-03-reliability.md) |
 | 本次重构、包体积对比与验收证据 | [重构验收](docs/qa/2026-10-02-refactor.md) |
 | 各轮验证范围、发布记录与未覆盖项 | [验收记录索引](docs/qa/README.md) |
 

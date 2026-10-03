@@ -38,9 +38,9 @@ export function PhotoEditor({ photo, visible, onChange, onVisibilityChange }: { 
 			<div className="min-w-0 flex-1">
 				<div className="flex flex-wrap items-center gap-1">
 					<Button size="sm" variant="outline" disabled={reading} onClick={() => file.current?.click()}>{reading ? "读取中…" : photo ? "更换" : "上传照片"}</Button>
-					{photo && <Button size="sm" variant="ghost" className="text-muted-foreground" onClick={() => onChange(undefined)}>移除</Button>}
+					{photo && <Button size="sm" variant="ghost" aria-label="移除照片" className="text-muted-foreground" onClick={() => onChange(undefined)}>移除</Button>}
 				</div>
-				{photo ? <label className="mt-1 flex min-h-9 cursor-pointer items-center gap-2 text-xs text-muted-foreground"><input type="checkbox" className="size-3.5 accent-primary" checked={visible} onChange={e => onVisibilityChange(e.target.checked)} />在简历中显示</label> : <p className="mt-2 text-[11px] leading-5 text-muted-foreground">JPG / PNG / WebP · 最大 10 MB</p>}
+				{photo ? <label className="mt-1 flex min-h-11 cursor-pointer items-center gap-2 text-xs text-muted-foreground"><input type="checkbox" className="size-3.5 accent-primary" checked={visible} onChange={e => onVisibilityChange(e.target.checked)} />在简历中显示照片</label> : <p className="mt-2 text-xs leading-5 text-muted-foreground">JPG / PNG / WebP · 最大 10 MB</p>}
 			</div>
 		</div>
 		<input ref={file} type="file" accept="image/jpeg,image/png,image/webp" aria-label="选择照片" className="hidden" onChange={e => { const selected = e.target.files?.[0]; e.target.value = ""; if (selected) void load(selected); }} />

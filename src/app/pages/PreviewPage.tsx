@@ -1,20 +1,22 @@
 import { ThemeMenu } from "@/components/ThemeMenu";
 import { useCallback, useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { LoaderCircle, Download, ArrowLeft, ZoomIn, ZoomOut } from "lucide-react";
+import { Download, ArrowLeft, ZoomIn, ZoomOut } from "lucide-react";
 import { ResumeDocument } from "@/components/resume/ResumeDocument";
 import { Button } from "@/components/ui/button";
 import type { ResumeLayoutInfo } from "@/hooks/useResumeFit";
 import { useWorkspace } from "@/hooks/useWorkspace";
-import { exportResumePdf } from "@/lib/exportResume";
-import { cleanFilename, pdfFilename } from "@/lib/resumeFiles";
+import { ExportDialog } from "@/components/ExportDialog";
+import { cleanFilename, pdfFilename, downloadJson } from "@/lib/resumeFiles";
 
 const A4_PX = (210 * 96) / 25.4;
 export function PreviewPage() {
-	const { resume, localError } = useWorkspace();
+	const model = useWorkspace();
+	const { resume, localError, canEdit, accessState } = model;
+	const navigate = useNavigate();
 	const [layout, setLayout] = useState<ResumeLayoutInfo>({ pageCount: 1, height: 1123 });
-	const [exporting, setExporting] = useState(false);
+	const [exportOpen, setExportOpen] = useState(false);
 	const [fit, setFit] = useState(1);
 	const [zoom, setZoom] = useState<number | null>(null);
 	const container = useRef<HTMLDivElement>(null);
@@ -29,81 +31,36 @@ export function PreviewPage() {
 		observer.observe(node);
 		return () => observer.disconnect();
 	}, [localError]);
-	if (localError)
-		return (
-			<div className="mx-auto grid min-h-screen max-w-lg place-content-center gap-4 px-6 text-center">
-				<p role="alert">{localError}</p>
-				<Button variant="outline" nativeButton={false} render={<Link to="/" />}>
-					返回编辑
-				</Button>
-			</div>
-		);
 	const scale = zoom ?? fit;
-	const mode = resume.meta.layoutMode;
-	const exportPdf = async () => {
-		setExporting(true);
-		try {
-			await exportResumePdf(mode, cleanFilename(pdfFilename(resume)));
-		} catch {
-			toast.error("导出失败，请重试");
-		} finally {
-			setExporting(false);
-		}
-	};
+ const requestEdit = async () => {
+  if (await model.requestEdit()) navigate("/");
+  else if (accessState !== "unsupported") toast.message("编辑页仍在使用中。关闭原编辑页后可在此继续。");
+ };
 	return (
 		<div className="public-stage min-h-screen bg-[var(--stage)] pb-16">
-			<header className="no-print mx-auto flex max-w-[210mm] items-center justify-between gap-2 px-3 py-4">
-				<Button
-					variant="ghost"
-					size="sm"
-					className="max-sm:min-h-10"
-					aria-label="返回编辑"
-					title="返回编辑"
-					nativeButton={false}
-					render={<Link to="/" />}
-				>
-					<ArrowLeft />
-					<span className="hidden sm:inline">返回编辑</span>
-				</Button>
-				<div className="flex items-center gap-1">
-					<ThemeMenu />
-					<Button variant="ghost" size="sm" onClick={() => setZoom(null)}>
-						适应屏幕
-					</Button>
-					<Button
-						variant="ghost"
-						size="sm"
-						aria-label="放大"
-						title="放大"
-						onClick={() => setZoom(Math.min(2, scale + 0.2))}
-					>
-						<ZoomIn />
-						<span className="hidden sm:inline">放大</span>
-					</Button>
-					<Button
-						variant="ghost"
-						size="sm"
-						aria-label="缩小"
-						title="缩小"
-						onClick={() => setZoom(Math.max(0.2, scale - 0.2))}
-					>
-						<ZoomOut />
-						<span className="hidden sm:inline">缩小</span>
-					</Button>
-				</div>
-				<Button
-					size="sm"
-					aria-label={mode === "single" ? "导出长页 PDF" : "导出 A4 PDF"}
-					title={mode === "single" ? "导出长页 PDF" : "导出 A4 PDF"}
-					disabled={exporting}
-					onClick={() => void exportPdf()}
-				>
-					{exporting ? <LoaderCircle className="animate-spin" /> : <Download />}
-					<span className="hidden sm:inline">
-						{exporting ? "准备中…" : mode === "single" ? "导出长页 PDF" : "导出 A4 PDF"}
-					</span>
-				</Button>
-			</header>
+   <header className="public-toolbar no-print mx-auto max-w-[210mm] px-3 py-4">
+    <div className="workspace-status-row">
+     <strong className="workspace-name">{model.drafts.find(d => d.id === model.activeId)!.name}</strong>
+     <span className="save-status" role="status" data-error={!!localError}>{localError ? (model.localConflict ? "保存已暂停" : "读取或保存失败") : canEdit ? (model.localPending ? "保存中…" : "已保存到本机") : "只读预览"}</span>
+    </div>
+    {!canEdit && <p className="readonly-notice" role="status">{accessState === "unsupported"
+     ? "当前浏览器无法安全开启编辑。你仍可预览和下载备份，请使用支持 Web Locks 的浏览器编辑。"
+     : accessState === "checking" ? "正在检查编辑权…" : localError ? "当前预览已保留。请查看下方提示，并下载可用备份。" : "另一个页面正在编辑。这里会跟随已保存内容更新；关闭原编辑页后，可在此继续编辑。"}</p>}
+    {localError && <p className="save-notice" role="alert">{localError}</p>}
+    <div className="public-toolbar-controls">
+     {canEdit ? <Button variant="ghost" size="sm" nativeButton={false} render={<Link to="/" />}><ArrowLeft />返回编辑</Button>
+      : accessState !== "unsupported" && accessState !== "editor" && !model.localConflict && <Button size="sm" variant="outline" disabled={accessState === "checking"} onClick={() => void requestEdit()}>在此编辑</Button>}
+     <ThemeMenu />
+     <Button size="sm" onClick={() => setExportOpen(true)}><Download />导出简历</Button>
+     <Button variant="ghost" size="sm" onClick={() => downloadJson(resume, cleanFilename(pdfFilename(resume)).replace(/\.pdf$/, ".json"))}>下载 JSON 备份</Button>
+    </div>
+    <div className="public-toolbar-controls">
+     <Button variant="ghost" size="sm" onClick={() => setZoom(null)}>适应屏幕</Button>
+     <Button variant="ghost" size="icon" aria-label="缩小预览" onClick={() => setZoom(Math.max(0.2, scale - 0.2))}><ZoomOut /></Button>
+     <span className="text-xs">{Math.round(scale * 100)}%</span>
+     <Button variant="ghost" size="icon" aria-label="放大预览" onClick={() => setZoom(Math.min(2, scale + 0.2))}><ZoomIn /></Button>
+    </div>
+   </header>
 			<div ref={container} className="flex overflow-auto px-3 pb-3">
 				<div
 					className="preview-paper mx-auto"
@@ -116,6 +73,7 @@ export function PreviewPage() {
 					</div>
 				</div>
 			</div>
+			{exportOpen && <ExportDialog resume={resume} onClose={() => setExportOpen(false)} />}
 		</div>
 	);
 }

@@ -2,6 +2,7 @@ import type { Resume } from "@shared/schema";
 
 export interface FormProps {
 	resume: Resume;
+	disabled?: boolean;
 	setResume: (updater: (current: Resume) => Resume) => void;
 }
 

@@ -25,6 +25,7 @@ export function PublicationsForm({ resume, setResume }: FormProps) {
 				>
 					<div className="mb-2 flex justify-end">
 						<ListControls
+ label={item.name || `论文 ${index + 1}`}
 							index={index}
 							total={resume.publications.length}
 							onMove={(from, to) => patch(setResume, "publications", moveItem(resume.publications, from, to))}
