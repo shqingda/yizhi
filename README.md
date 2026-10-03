@@ -32,7 +32,7 @@ pnpm preview     # 构建并预览生产版本
 
 | 内容 | 文档 |
 | --- | --- |
-| 当前生产版本与线上验证 | [2026-10-03 发布记录](docs/qa/2026-10-03-release.md) |
+| 当前生产版本与线上验证 | [2026-10-03 紧凑预览工具栏发布](docs/qa/2026-10-03-toolbar-release.md) |
 | 使用、开发、部署、修改样例 | [使用与开发指南](docs/guide.md) |
 | 数据流、模块职责、存储与导出边界 | [技术架构](docs/architecture.md) |
 | 项目经历、面试介绍与技术追问 | [面试准备](docs/project-experience.md) |
